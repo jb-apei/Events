@@ -12,6 +12,16 @@ resource "azurerm_container_app" "apps" {
     type = "SystemAssigned"
   }
 
+  # Configure registry with managed identity authentication
+  dynamic "registry" {
+    for_each = var.acr_login_server != "" ? [1] : []
+    
+    content {
+      server   = var.acr_login_server
+      identity = "system"
+    }
+  }
+
   template {
     container {
       name   = each.value.name
@@ -27,6 +37,15 @@ resource "azurerm_container_app" "apps" {
       env {
         name  = "AZURE_KEY_VAULT_ENDPOINT"
         value = var.key_vault_id
+      }
+
+      # Add custom environment variables per app
+      dynamic "env" {
+        for_each = try(each.value.env_vars, {})
+        content {
+          name  = env.key
+          value = env.value
+        }
       }
     }
 

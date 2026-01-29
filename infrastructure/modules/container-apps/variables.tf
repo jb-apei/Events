@@ -40,9 +40,15 @@ variable "apps" {
     max_replicas     = number
     ingress_enabled  = optional(bool, false)
     external_ingress = optional(bool, false)
+    env_vars         = optional(map(string), {})
   }))
 }
 
+variable "acr_login_server" {
+  description = "Azure Container Registry login server"
+  type        = string
+  default     = ""
+}
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

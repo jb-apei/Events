@@ -24,8 +24,11 @@ RUN rm -rf ./*
 # Copy built assets from build stage
 COPY --from=build /app/dist .
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx configuration template
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+# Set default API Gateway URL (can be overridden by environment variable)
+ENV API_GATEWAY_URL=http://localhost:5037
 
 EXPOSE 80
 

@@ -24,3 +24,13 @@ output "api_gateway_url" {
   description = "API Gateway URL"
   value       = try("https://${azurerm_container_app.apps["api-gateway"].ingress[0].fqdn}", null)
 }
+
+output "frontend_fqdn" {
+  description = "Frontend FQDN"
+  value       = try(azurerm_container_app.apps["frontend"].ingress[0].fqdn, null)
+}
+
+output "frontend_url" {
+  description = "Frontend URL"
+  value       = try("https://${azurerm_container_app.apps["frontend"].ingress[0].fqdn}", null)
+}

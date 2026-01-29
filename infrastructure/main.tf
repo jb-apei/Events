@@ -21,6 +21,13 @@ provider "azurerm" {
   subscription_id = var.subscription_id
 }
 
+# Random suffix for globally unique resource names
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
 # Resource Group
 resource "azurerm_resource_group" "main" {
   name     = "rg-${var.project_name}-${var.environment}"
@@ -33,7 +40,7 @@ module "service_bus" {
   source  = "Azure/avm-res-servicebus-namespace/azurerm"
   version = "~> 0.3"
 
-  name                = "sb-${var.project_name}-${var.environment}"
+  name                = "sb-${var.project_name}-${var.environment}-${random_string.suffix.result}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   sku                 = var.service_bus_sku
@@ -173,6 +180,8 @@ module "application_insights" {
   internet_query_enabled                = true
   local_authentication_disabled         = false
 
+  depends_on = [module.log_analytics]
+
   tags = var.tags
 }
 
@@ -181,7 +190,7 @@ module "container_registry" {
   source  = "Azure/avm-res-containerregistry-registry/azurerm"
   version = "~> 0.4"
 
-  name                = "acr${var.project_name}${var.environment}"
+  name                = "acr${var.project_name}${var.environment}${random_string.suffix.result}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
@@ -193,12 +202,15 @@ module "container_registry" {
   tags = var.tags
 }
 
+# Current client for Key Vault RBAC
+data "azurerm_client_config" "current" {}
+
 # Azure Verified Module: Key Vault
 module "key_vault" {
   source  = "Azure/avm-res-keyvault-vault/azurerm"
   version = "~> 0.9"
 
-  name                = "kv-${var.project_name}-${var.environment}"
+  name                = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   tenant_id           = var.tenant_id
@@ -215,23 +227,36 @@ module "key_vault" {
   tags = var.tags
 }
 
+# Grant Terraform service principal access to Key Vault
+resource "azurerm_role_assignment" "kv_terraform_admin" {
+  scope                = module.key_vault.resource_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
 # Store connection strings in Key Vault
 resource "azurerm_key_vault_secret" "sql_transactional_connection" {
   name         = "sql-transactional-connection"
   value        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
   key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
 }
 
 resource "azurerm_key_vault_secret" "sql_readmodel_connection" {
   name         = "sql-readmodel-connection"
   value        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
   key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
 }
 
 resource "azurerm_key_vault_secret" "service_bus_connection" {
   name         = "service-bus-connection"
   value        = module.service_bus.resource.default_primary_connection_string
   key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
 }
 
 # Event Grid domain authentication uses managed identity or SAS tokens
@@ -241,6 +266,8 @@ resource "azurerm_key_vault_secret" "app_insights_connection" {
   name         = "app-insights-connection"
   value        = module.application_insights.resource.connection_string
   key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
 }
 
 # Azure Verified Module: Container Apps Environment
@@ -255,6 +282,8 @@ module "container_apps_environment" {
   log_analytics_workspace_customer_id  = module.log_analytics.resource.workspace_id
   log_analytics_workspace_primary_shared_key = module.log_analytics.resource.primary_shared_key
 
+  zone_redundancy_enabled = false  # Disable zone redundancy for non-VNET deployments
+
   tags = var.tags
 }
 
@@ -268,6 +297,7 @@ module "container_apps" {
   project_name                = var.project_name
   environment                 = var.environment
   key_vault_id                = module.key_vault.resource_id
+  acr_login_server            = module.container_registry.resource.login_server
 
   apps = {
     prospect-service = {
@@ -281,8 +311,8 @@ module "container_apps" {
     }
     api-gateway = {
       name     = "api-gateway"
-      image    = "mcr.microsoft.com/dotnet/samples:aspnetapp" # Placeholder
-      port     = 5000
+      image    = "acreventsdevrcwv3i.azurecr.io/api-gateway:latest"
+      port     = 8080
       cpu      = 0.5
       memory   = "1Gi"
       min_replicas = 1
@@ -308,6 +338,20 @@ module "container_apps" {
       min_replicas = 1
       max_replicas = 3
     }
+    frontend = {
+      name     = "frontend"
+      image    = "acreventsdevrcwv3i.azurecr.io/frontend:latest"
+      port     = 80
+      cpu      = 0.25
+      memory   = "0.5Gi"
+      min_replicas = 1
+      max_replicas = 3
+      ingress_enabled = true
+      external_ingress = true
+      env_vars = {
+        API_GATEWAY_URL = "https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io"
+      }
+    }
   }
 
   tags = var.tags
@@ -320,4 +364,7 @@ resource "azurerm_role_assignment" "container_apps_acr_pull" {
   scope                = module.container_registry.resource_id
   role_definition_name = "AcrPull"
   principal_id         = each.value.principal_id
+
+  depends_on = [module.container_apps]
 }
+

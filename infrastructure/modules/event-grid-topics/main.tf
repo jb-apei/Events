@@ -12,16 +12,3 @@ resource "azurerm_eventgrid_topic" "topics" {
 
   tags = var.tags
 }
-
-# Create Event Grid System Topic for webhook subscriptions
-resource "azurerm_eventgrid_system_topic" "webhook" {
-  for_each = toset(var.topics)
-
-  name                   = "evgst-${var.project_name}-${each.key}-${var.environment}"
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  source_arm_resource_id = azurerm_eventgrid_topic.topics[each.key].id
-  topic_type             = "Microsoft.EventGrid.Topics"
-
-  tags = var.tags
-}
