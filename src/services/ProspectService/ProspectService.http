@@ -1,0 +1,103 @@
+### ProspectService API Tests
+@baseUrl = http://localhost:5110
+@correlationId = {{$guid}}
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Create Prospect - Jane Doe
+POST {{baseUrl}}/api/prospects
+Content-Type: application/json
+X-Correlation-ID: {{correlationId}}
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1-555-0123",
+  "source": "Website",
+  "notes": "Interested in Data Science program"
+}
+
+### Create Prospect - John Smith
+POST {{baseUrl}}/api/prospects
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "email": "john.smith@example.com",
+  "phone": "+1-555-0456",
+  "source": "Referral",
+  "notes": "Friend of current student"
+}
+
+### Update Prospect - Change Status to Contacted
+PUT {{baseUrl}}/api/prospects/1
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1-555-0123",
+  "source": "Website",
+  "status": "Contacted",
+  "notes": "Called on 2026-01-29. Follow-up scheduled for next week."
+}
+
+### Update Prospect - Change Status to Qualified
+PUT {{baseUrl}}/api/prospects/1
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1-555-0123",
+  "source": "Website",
+  "status": "Qualified",
+  "notes": "Completed application. High interest level."
+}
+
+### Get Prospect (Placeholder)
+GET {{baseUrl}}/api/prospects/1
+
+### Test Validation - Missing Required Fields
+POST {{baseUrl}}/api/prospects
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Test Validation - Invalid Email
+POST {{baseUrl}}/api/prospects
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "User",
+  "email": "not-an-email"
+}
+
+### Test Validation - Duplicate Email (run after creating Jane Doe)
+POST {{baseUrl}}/api/prospects
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Duplicate",
+  "email": "jane.doe@example.com"
+}
+
+### Test Validation - Invalid Status
+PUT {{baseUrl}}/api/prospects/1
+Content-Type: application/json
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "status": "InvalidStatus"
+}
