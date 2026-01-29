@@ -302,8 +302,8 @@ module "container_apps" {
   apps = {
     prospect-service = {
       name     = "prospect-service"
-      image    = "mcr.microsoft.com/dotnet/samples:aspnetapp" # Placeholder
-      port     = 5000
+      image    = "acreventsdevrcwv3i.azurecr.io/prospect-service:latest"
+      port     = 8080
       cpu      = 0.25
       memory   = "0.5Gi"
       min_replicas = 1
@@ -322,8 +322,8 @@ module "container_apps" {
     }
     event-relay = {
       name     = "event-relay"
-      image    = "mcr.microsoft.com/dotnet/samples:aspnetapp" # Placeholder
-      port     = 5000
+      image    = "acreventsdevrcwv3i.azurecr.io/event-relay:latest"
+      port     = 8080
       cpu      = 0.25
       memory   = "0.5Gi"
       min_replicas = 1
@@ -331,8 +331,8 @@ module "container_apps" {
     }
     projection-service = {
       name     = "projection-service"
-      image    = "mcr.microsoft.com/dotnet/samples:aspnetapp" # Placeholder
-      port     = 5000
+      image    = "acreventsdevrcwv3i.azurecr.io/projection-service:latest"
+      port     = 8080
       cpu      = 0.25
       memory   = "0.5Gi"
       min_replicas = 1
