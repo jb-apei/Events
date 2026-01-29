@@ -16,11 +16,11 @@ services:
     networks:
       - events-network
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" -C || exit 1
       interval: 10s
       timeout: 3s
       retries: 10
-      start_period: 10s
+      start_period: 20s
 
   # Azure Storage Emulator (Azurite) for Service Bus/Event Grid local development
   azurite:
@@ -72,7 +72,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProspectsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__ProspectDb=Server=sqlserver;Database=ProspectsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
       - ServiceBus__ConnectionString=UseDevelopmentStorage=true
       - ServiceBus__QueueName=identity-commands
     depends_on:
@@ -151,7 +151,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProjectionsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__ProjectionDatabase=Server=sqlserver;Database=ProjectionsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
     depends_on:
       sqlserver:
         condition: service_healthy

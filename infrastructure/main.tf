@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.6"
+  required_version = ">= 1.11"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -66,12 +66,11 @@ module "event_grid" {
   source  = "Azure/avm-res-eventgrid-domain/azurerm"
   version = "~> 0.1"
 
-  name                = "evgd-${var.project_name}-${var.environment}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  name     = "evgd-${var.project_name}-${var.environment}"
+  location = azurerm_resource_group.main.location
+  parent_id = azurerm_resource_group.main.id
 
-  input_schema         = "CloudEventSchemaV1_0"
-  public_network_access_enabled = var.environment == "dev" ? true : false
+  input_schema = "CloudEventSchemaV1_0"
 
   tags = var.tags
 }
@@ -97,7 +96,7 @@ module "event_grid_topics" {
 # Azure Verified Module: SQL Server
 module "sql_server" {
   source  = "Azure/avm-res-sql-server/azurerm"
-  version = "~> 0.8"
+  version = "~> 0.1"
 
   name                = "sql-${var.project_name}-${var.environment}"
   resource_group_name = azurerm_resource_group.main.name
@@ -105,10 +104,9 @@ module "sql_server" {
 
   administrator_login          = var.sql_admin_username
   administrator_login_password = var.sql_admin_password
-  version                      = "12.0"
+  server_version               = "12.0"
 
   public_network_access_enabled = var.environment == "dev" ? true : false
-  minimum_tls_version           = "1.2"
 
   # Allow Azure services to access
   firewall_rules = var.environment == "dev" ? {
@@ -178,6 +176,23 @@ module "application_insights" {
   tags = var.tags
 }
 
+# Azure Verified Module: Container Registry
+module "container_registry" {
+  source  = "Azure/avm-res-containerregistry-registry/azurerm"
+  version = "~> 0.4"
+
+  name                = "acr${var.project_name}${var.environment}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+
+  sku                           = "Standard"
+  public_network_access_enabled = true
+  admin_enabled                 = false  # Use managed identity instead
+  zone_redundancy_enabled       = false
+
+  tags = var.tags
+}
+
 # Azure Verified Module: Key Vault
 module "key_vault" {
   source  = "Azure/avm-res-keyvault-vault/azurerm"
@@ -219,11 +234,8 @@ resource "azurerm_key_vault_secret" "service_bus_connection" {
   key_vault_id = module.key_vault.resource_id
 }
 
-resource "azurerm_key_vault_secret" "event_grid_access_key" {
-  name         = "event-grid-access-key"
-  value        = module.event_grid.resource.primary_access_key
-  key_vault_id = module.key_vault.resource_id
-}
+# Event Grid domain authentication uses managed identity or SAS tokens
+# Access keys are obtained via Azure API when needed
 
 resource "azurerm_key_vault_secret" "app_insights_connection" {
   name         = "app-insights-connection"
@@ -299,4 +311,13 @@ module "container_apps" {
   }
 
   tags = var.tags
+}
+
+# Grant Container Apps AcrPull permission
+resource "azurerm_role_assignment" "container_apps_acr_pull" {
+  for_each = module.container_apps.container_app_identities
+
+  scope                = module.container_registry.resource_id
+  role_definition_name = "AcrPull"
+  principal_id         = each.value.principal_id
 }

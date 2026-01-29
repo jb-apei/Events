@@ -8,7 +8,10 @@ output "container_app_ids" {
 output "container_app_identities" {
   description = "Map of container app names to managed identity principal IDs"
   value = {
-    for k, v in azurerm_container_app.apps : k => v.identity[0].principal_id
+    for k, v in azurerm_container_app.apps : k => {
+      principal_id = v.identity[0].principal_id
+      tenant_id    = v.identity[0].tenant_id
+    }
   }
 }
 
