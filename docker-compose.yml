@@ -1,0 +1,182 @@
+version: '3.8'
+
+services:
+  # SQL Server for all services
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: events-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - events-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Azure Storage Emulator (Azurite) for Service Bus/Event Grid local development
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: events-azurite
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - azurite-data:/data
+    networks:
+      - events-network
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose"
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./src/services
+      dockerfile: ApiGateway/Dockerfile
+    container_name: events-api-gateway
+    ports:
+      - "5037:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=EventsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ServiceBus__ConnectionString=UseDevelopmentStorage=true
+      - ServiceBus__QueueName=identity-commands
+      - JWT__Secret=your-super-secret-jwt-key-at-least-32-characters-long
+      - JWT__Issuer=Events.ApiGateway
+      - JWT__Audience=Events.Client
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    networks:
+      - events-network
+
+  # Prospect Service
+  prospect-service:
+    build:
+      context: ./src/services
+      dockerfile: ProspectService/Dockerfile
+    container_name: events-prospect-service
+    ports:
+      - "5110:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProspectsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ServiceBus__ConnectionString=UseDevelopmentStorage=true
+      - ServiceBus__QueueName=identity-commands
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    networks:
+      - events-network
+
+  # Student Service
+  student-service:
+    build:
+      context: ./src/services
+      dockerfile: StudentService/Dockerfile
+    container_name: events-student-service
+    ports:
+      - "5120:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=StudentsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - events-network
+
+  # Instructor Service
+  instructor-service:
+    build:
+      context: ./src/services
+      dockerfile: InstructorService/Dockerfile
+    container_name: events-instructor-service
+    ports:
+      - "5130:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=InstructorsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - events-network
+
+  # Event Relay Service
+  event-relay:
+    build:
+      context: ./src/services
+      dockerfile: EventRelay/Dockerfile
+    container_name: events-event-relay
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__ProspectsDb=Server=sqlserver;Database=ProspectsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__StudentsDb=Server=sqlserver;Database=StudentsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__InstructorsDb=Server=sqlserver;Database=InstructorsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - EventGrid__TopicEndpoint=http://azurite:10002/devstoreaccount1/events
+      - EventGrid__AccessKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    networks:
+      - events-network
+
+  # Projection Service
+  projection-service:
+    build:
+      context: ./src/services
+      dockerfile: ProjectionService/Dockerfile
+    container_name: events-projection-service
+    ports:
+      - "5140:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=ProjectionsDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - events-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: events-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5037
+    depends_on:
+      - api-gateway
+    networks:
+      - events-network
+
+networks:
+  events-network:
+    driver: bridge
+
+volumes:
+  sqlserver-data:
+  azurite-data:
