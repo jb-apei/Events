@@ -1,51 +1,6 @@
-# .NET build artifacts
-**/bin/
-**/obj/
-**/.vs/
-**/.vscode/
-*.user
-*.suo
-
-# Test results
-**/TestResults/
-
-# NuGet packages
-**/*.nupkg
-**/.nuget/
-
-# Build results
-**/[Dd]ebug/
-**/[Rr]elease/
-**/x64/
-**/x86/
-**/[Aa][Rr][Mm]/
-**/[Aa][Rr][Mm]64/
-**/bld/
-
-# Visual Studio cache/options
-**/.vs/
+bin/
+obj/
 *.suo
 *.user
-*.userosscache
-*.sln.docstates
-
-# Git
-.git
-.gitignore
-.gitattributes
-
-# Documentation
-**/*.md
-!README.md
-
-# Environment files
-**/.env
-**/.env.*
-
-# Logs
-**/*.log
-**/logs/
-
-# OS files
-.DS_Store
-Thumbs.db
+.vs/
+.vscode/
