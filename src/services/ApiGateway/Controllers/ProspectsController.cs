@@ -128,25 +128,52 @@ public class ProspectsController : ControllerBase
     {
         try
         {
-            // In development mode, proxy to ProspectService
-            var prospectServiceUrl = _configuration["ProspectService:Url"] ?? "http://localhost:5110";
-            var httpClient = _httpClientFactory.CreateClient();
-
-            var response = await httpClient.GetAsync($"{prospectServiceUrl}/api/prospects");
-
-            if (response.IsSuccessStatusCode)
+            // Query the read model database directly
+            var readModelConnectionString = _configuration.GetConnectionString("ReadModelDb");
+            if (string.IsNullOrEmpty(readModelConnectionString))
             {
-                var content = await response.Content.ReadAsStringAsync();
-                return Content(content, "application/json");
+                _logger.LogWarning("ReadModelDb connection string not configured");
+                return Ok(Array.Empty<object>());
             }
 
-            _logger.LogWarning("ProspectService returned {StatusCode}", response.StatusCode);
-            return Ok(Array.Empty<object>());
+            using var connection = new Microsoft.Data.SqlClient.SqlConnection(readModelConnectionString);
+            await connection.OpenAsync();
+
+            var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT ProspectId, FirstName, LastName, Email, Phone, Status, CreatedAt, UpdatedAt
+                FROM ProspectSummary
+                ORDER BY CreatedAt DESC
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY";
+            
+            command.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
+            command.Parameters.AddWithValue("@PageSize", pageSize);
+
+            var prospects = new List<object>();
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                prospects.Add(new
+                {
+                    id = reader.GetInt32(0),
+                    firstName = reader.IsDBNull(1) ? null : reader.GetString(1),
+                    lastName = reader.IsDBNull(2) ? null : reader.GetString(2),
+                    email = reader.IsDBNull(3) ? null : reader.GetString(3),
+                    phone = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    status = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    createdAt = reader.GetDateTime(6),
+                    updatedAt = reader.IsDBNull(7) ? (DateTime?)null : reader.GetDateTime(7)
+                });
+            }
+
+            _logger.LogInformation("Retrieved {Count} prospects from read model", prospects.Count);
+            return Ok(prospects);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to query ProspectService");
-            return Ok(Array.Empty<object>());
+            _logger.LogError(ex, "Failed to query read model database");
+            return StatusCode(500, new { error = "Failed to retrieve prospects" });
         }
     }
 }

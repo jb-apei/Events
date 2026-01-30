@@ -328,6 +328,7 @@ module "container_apps" {
       external_ingress = true
       env_vars = {
         ConnectionStrings__ReadModelDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
         ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
         ApplicationInsights__ConnectionString = module.application_insights.resource.connection_string
       }

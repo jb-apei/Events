@@ -28,10 +28,32 @@ public class WebSocketManager
     private readonly ILogger<WebSocketManager> _logger;
     private const int MaxConnectionsPerUser = 5;
     private const int MaxTotalConnections = 1000;
+    private readonly Timer _cleanupTimer;
 
     public WebSocketManager(ILogger<WebSocketManager> logger)
     {
         _logger = logger;
+        
+        // Start background cleanup task to remove dead connections every 30 seconds
+        _cleanupTimer = new Timer(async _ => await CleanupDeadConnectionsAsync(), 
+            null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task CleanupDeadConnectionsAsync()
+    {
+        var deadConnections = _connections.Values
+            .Where(c => c.Socket.State != WebSocketState.Open)
+            .Select(c => c.ConnectionId)
+            .ToList();
+
+        if (deadConnections.Any())
+        {
+            _logger.LogInformation("Cleaning up {Count} dead WebSocket connections", deadConnections.Count);
+            foreach (var connectionId in deadConnections)
+            {
+                await RemoveConnectionAsync(connectionId);
+            }
+        }
     }
 
     public bool AddConnection(WebSocketConnection connection)

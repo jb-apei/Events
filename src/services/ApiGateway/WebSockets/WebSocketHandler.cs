@@ -65,27 +65,71 @@ public class WebSocketHandler
     private async Task ReceiveMessagesAsync(WebSocketConnection connection)
     {
         var buffer = new byte[1024 * 4];
+        var idleTimeout = TimeSpan.FromMinutes(5); // Close idle connections after 5 minutes
+        var lastActivity = DateTime.UtcNow;
 
-        while (connection.Socket.State == WebSocketState.Open)
+        using var cts = new CancellationTokenSource();
+        
+        // Send periodic pings to keep connection alive and detect disconnects
+        var pingTask = Task.Run(async () =>
         {
-            var result = await connection.Socket.ReceiveAsync(
-                new ArraySegment<byte>(buffer),
-                CancellationToken.None);
-
-            if (result.MessageType == WebSocketMessageType.Close)
+            while (connection.Socket.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
             {
-                await connection.Socket.CloseAsync(
-                    WebSocketCloseStatus.NormalClosure,
-                    "Client requested close",
+                await Task.Delay(TimeSpan.FromSeconds(30), cts.Token);
+                
+                // Check if connection is idle
+                if (DateTime.UtcNow - lastActivity > idleTimeout)
+                {
+                    _logger.LogInformation("Closing idle WebSocket connection {ConnectionId}", connection.ConnectionId);
+                    await connection.Socket.CloseAsync(
+                        WebSocketCloseStatus.NormalClosure,
+                        "Connection idle timeout",
+                        CancellationToken.None);
+                    break;
+                }
+
+                // Send ping to keep connection alive
+                if (connection.Socket.State == WebSocketState.Open)
+                {
+                    await connection.Socket.SendAsync(
+                        new ArraySegment<byte>(Encoding.UTF8.GetBytes("{\"type\":\"ping\"}")),
+                        WebSocketMessageType.Text,
+                        true,
+                        CancellationToken.None);
+                }
+            }
+        }, cts.Token);
+
+        try
+        {
+            while (connection.Socket.State == WebSocketState.Open)
+            {
+                var result = await connection.Socket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer),
                     CancellationToken.None);
-                break;
-            }
 
-            if (result.MessageType == WebSocketMessageType.Text)
-            {
-                var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                await HandleClientMessageAsync(connection, message);
+                lastActivity = DateTime.UtcNow; // Update activity timestamp
+
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    await connection.Socket.CloseAsync(
+                        WebSocketCloseStatus.NormalClosure,
+                        "Client requested close",
+                        CancellationToken.None);
+                    break;
+                }
+
+                if (result.MessageType == WebSocketMessageType.Text)
+                {
+                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                    await HandleClientMessageAsync(connection, message);
+                }
             }
+        }
+        finally
+        {
+            cts.Cancel(); // Stop ping task
+            try { await pingTask; } catch { /* Ignore cancellation */ }
         }
     }
 

@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-const PROSPECT_API = 'http://localhost:5110';
-const STUDENT_API = 'http://localhost:5120';
-const INSTRUCTOR_API = 'http://localhost:5130';
+// Use API Gateway URL to proxy to services
+const API_GATEWAY_URL = (import.meta as any).env?.VITE_API_URL || 'https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/api';
 
 export interface OutboxMessage {
   id: number;
@@ -41,44 +40,62 @@ export const diagnosticsApi = {
 
   // Get outbox messages for a service
   getOutboxMessages: async (serviceUrl: string): Promise<OutboxResponse> => {
-    const response = await axios.get<OutboxResponse>(`${serviceUrl}/api/diagnostics/outbox`);
-    return response.data;
+    // Use API Gateway's outbox endpoint instead of calling services directly
+    const token = localStorage.getItem('jwt_token');
+    const response = await axios.get<any[]>(`${API_GATEWAY_URL}/outbox`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    // Transform API Gateway response to match expected format
+    return {
+      total: response.data.length,
+      messages: response.data.map(msg => ({
+        id: 0, // Not used from aggregated view
+        eventId: msg.id,
+        eventType: msg.eventType,
+        createdAt: msg.createdAt,
+        published: msg.published,
+        publishedAt: msg.publishedAt,
+        payloadPreview: msg.payload ? msg.payload.substring(0, 100) : ''
+      }))
+    };
   },
 
   // Get all outbox data from all services
   getAllOutboxData: async (): Promise<ServiceOutboxData[]> => {
-    const services = [
-      { name: 'ProspectService', url: PROSPECT_API },
-      { name: 'StudentService', url: STUDENT_API },
-      { name: 'InstructorService', url: INSTRUCTOR_API },
-    ];
+    try {
+      const token = localStorage.getItem('jwt_token');
+      const response = await axios.get<any[]>(`${API_GATEWAY_URL}/outbox`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      
+      const messages = response.data.map(msg => ({
+        id: 0,
+        eventId: msg.id,
+        eventType: msg.eventType,
+        createdAt: msg.createdAt,
+        published: msg.published,
+        publishedAt: msg.publishedAt,
+        payloadPreview: msg.payload ? msg.payload.substring(0, 100) : ''
+      }));
 
-    const results = await Promise.allSettled(
-      services.map(async (service) => {
-        try {
-          const [stats, outbox] = await Promise.all([
-            diagnosticsApi.getOutboxStats(service.url),
-            diagnosticsApi.getOutboxMessages(service.url),
-          ]);
-
-          return {
-            serviceName: service.name,
-            stats,
-            messages: outbox.messages,
-          };
-        } catch (error) {
-          return {
-            serviceName: service.name,
-            stats: { total: 0, published: 0, pending: 0 },
-            messages: [],
-            error: error instanceof Error ? error.message : 'Unknown error',
-          };
-        }
-      })
-    );
-
-    return results.map((result) =>
-      result.status === 'fulfilled' ? result.value : result.reason
-    );
+      return [{
+        serviceName: 'ProspectService',
+        stats: {
+          total: messages.length,
+          published: messages.filter(m => m.published).length,
+          pending: messages.filter(m => !m.published).length
+        },
+        messages
+      }];
+    } catch (error) {
+      console.error('[DiagnosticsApi] Failed to fetch outbox:', error);
+      return [{
+        serviceName: 'ProspectService',
+        stats: { total: 0, published: 0, pending: 0 },
+        messages: [],
+        error: error instanceof Error ? error.message : 'Failed to fetch outbox data'
+      }];
+    }
   },
 };
