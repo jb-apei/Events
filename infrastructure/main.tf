@@ -287,6 +287,20 @@ module "container_apps_environment" {
   tags = var.tags
 }
 
+# Compute service URLs using Container Apps Environment domain
+# This allows services to reference each other without circular dependencies
+locals {
+  container_app_base_domain = module.container_apps_environment.default_domain
+  
+  # Construct FQDNs for services using the naming pattern: ca-{project}-{service}-{env}.{domain}
+  api_gateway_fqdn = "ca-${var.project_name}-api-gateway-${var.environment}.${local.container_app_base_domain}"
+  api_gateway_url  = "https://${local.api_gateway_fqdn}"
+  
+  # Add other service FQDNs as needed for inter-service communication
+  prospect_service_fqdn = "ca-${var.project_name}-prospect-service-${var.environment}.${local.container_app_base_domain}"
+  projection_service_fqdn = "ca-${var.project_name}-projection-service-${var.environment}.${local.container_app_base_domain}"
+}
+
 # Container Apps (using custom module as we need specific configurations)
 module "container_apps" {
   source = "./modules/container-apps"
@@ -312,7 +326,7 @@ module "container_apps" {
         ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
         ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
         Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        ApiGateway__Url = "https://${module.container_apps.container_app_fqdns["api-gateway"]}"
+        ApiGateway__Url = local.api_gateway_url
         ApiGateway__PushEvents = "true"
       }
     }
@@ -365,7 +379,7 @@ module "container_apps" {
         ConnectionStrings__ProjectionDatabase = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
         ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
         Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        ApiGateway__Url = "https://${module.container_apps.container_app_fqdns["api-gateway"]}"
+        ApiGateway__Url = local.api_gateway_url
       }
     }
     frontend = {
@@ -379,7 +393,7 @@ module "container_apps" {
       ingress_enabled = true
       external_ingress = true
       env_vars = {
-        API_GATEWAY_URL = "https://${module.container_apps.container_app_fqdns["api-gateway"]}"
+        API_GATEWAY_URL = local.api_gateway_url
       }
     }
   }
