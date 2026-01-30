@@ -15,7 +15,7 @@ resource "azurerm_container_app" "apps" {
   # Configure registry with managed identity authentication
   dynamic "registry" {
     for_each = var.acr_login_server != "" ? [1] : []
-    
+
     content {
       server   = var.acr_login_server
       identity = "system"

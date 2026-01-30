@@ -15,6 +15,13 @@ output "container_app_identities" {
   }
 }
 
+output "container_app_fqdns" {
+  description = "Map of container app names to FQDNs"
+  value = {
+    for k, v in azurerm_container_app.apps : k => try(v.ingress[0].fqdn, null)
+  }
+}
+
 output "api_gateway_fqdn" {
   description = "API Gateway FQDN"
   value       = try(azurerm_container_app.apps["api-gateway"].ingress[0].fqdn, null)

@@ -68,6 +68,20 @@ public class EventGridWebhookController : ControllerBase
     }
 
     /// <summary>
+    /// OPTIONS handler for Event Grid webhook validation.
+    /// Event Grid sends OPTIONS request to validate the endpoint before creating subscription.
+    /// </summary>
+    [HttpOptions("webhook")]
+    public IActionResult OptionsWebhook()
+    {
+        // Event Grid validates the endpoint by sending OPTIONS request
+        // Return 200 OK with appropriate headers
+        Response.Headers.Append("WebHook-Allowed-Origin", "*");
+        Response.Headers.Append("WebHook-Allowed-Rate", "*");
+        return Ok();
+    }
+
+    /// <summary>
     /// Health check endpoint for Event Grid subscription validation.
     /// </summary>
     [HttpGet("health")]

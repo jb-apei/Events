@@ -83,18 +83,25 @@ public class CommandPublisher : IAsyncDisposable
         else if (_sender != null)
         {
             // Production mode: Use Service Bus
+            var commandTypeProperty = typeof(T).GetProperty("CommandType");
+            var commandType = commandTypeProperty?.GetValue(command)?.ToString() ?? typeof(T).Name;
+
             var json = JsonSerializer.Serialize(command);
             var message = new ServiceBusMessage(json)
             {
                 ContentType = "application/json",
                 CorrelationId = correlationId,
-                MessageId = Guid.NewGuid().ToString()
+                MessageId = Guid.NewGuid().ToString(),
+                Subject = commandType  // Add CommandType as Subject
             };
+
+            // Also add to application properties for compatibility
+            message.ApplicationProperties.Add("CommandType", commandType);
 
             await _sender.SendMessageAsync(message, cancellationToken);
 
             _logger.LogInformation("Published command {CommandType} with MessageId {MessageId} and CorrelationId {CorrelationId}",
-                typeof(T).Name, message.MessageId, correlationId);
+                commandType, message.MessageId, correlationId);
         }
     }
 

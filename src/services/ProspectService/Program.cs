@@ -75,12 +75,22 @@ app.UseCors();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Ensure database is created (for development only - use migrations in production)
-if (app.Environment.IsDevelopment())
+// Ensure database is created
+Console.WriteLine("INFO: Initializing database...");
+try
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ProspectDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<ProspectDbContext>();
+        await dbContext.Database.EnsureCreatedAsync();
+        Console.WriteLine("INFO: Database initialized successfully");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"ERROR: Failed to initialize database: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    throw;
 }
 
 app.Run();

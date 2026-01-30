@@ -33,6 +33,17 @@ builder.Services.AddScoped<EventDispatcher>();
 // Add controllers for webhook endpoint
 builder.Services.AddControllers();
 
+// Add CORS for Event Grid webhook validation
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("EventGridPolicy", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Add background services
 builder.Services.AddHostedService<InboxCleanupService>();
 
@@ -66,6 +77,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure middleware
+app.UseCors("EventGridPolicy");
 app.UseRouting();
 app.MapControllers();
 app.MapHealthChecks("/health");

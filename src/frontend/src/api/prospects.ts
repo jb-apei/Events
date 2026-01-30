@@ -31,8 +31,11 @@ class ProspectsApi {
   private client: AxiosInstance
 
   constructor() {
+    // Use API Gateway URL from Vite environment variable or fallback to relative path
+    const apiUrl = (import.meta as any).env?.VITE_API_URL || '/api'
+
     this.client = axios.create({
-      baseURL: '/api',
+      baseURL: apiUrl,
     })
 
     // Add JWT token to all requests

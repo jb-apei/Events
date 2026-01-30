@@ -11,8 +11,10 @@ const ProspectPage = () => {
 
   // WebSocket connection with real-time event handling
   // Note: useWebSocket will automatically add the JWT token from localStorage
+  const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/api'
+  const wsUrl = apiUrl.replace(/^https?:/, 'wss:').replace('/api', '') + '/ws/events'
   const { status } = useWebSocket({
-    url: 'ws://localhost:3000/ws/events',
+    url: wsUrl,
     onMessage: (event) => {
       // Handle ProspectCreated and ProspectUpdated events
       console.log('[ProspectPage] Received WebSocket event:', event)

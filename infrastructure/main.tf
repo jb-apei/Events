@@ -308,6 +308,13 @@ module "container_apps" {
       memory   = "0.5Gi"
       min_replicas = 1
       max_replicas = 3
+      env_vars = {
+        ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ApiGateway__Url = "https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io"
+        ApiGateway__PushEvents = "true"
+      }
     }
     api-gateway = {
       name     = "api-gateway"
@@ -319,6 +326,11 @@ module "container_apps" {
       max_replicas = 5
       ingress_enabled = true
       external_ingress = true
+      env_vars = {
+        ConnectionStrings__ReadModelDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ApplicationInsights__ConnectionString = module.application_insights.resource.connection_string
+      }
     }
     event-relay = {
       name     = "event-relay"
@@ -328,6 +340,15 @@ module "container_apps" {
       memory   = "0.5Gi"
       min_replicas = 1
       max_replicas = 1
+      env_vars = {
+        ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        Azure__EventGrid__ProspectTopicEndpoint = module.event_grid_topics.topic_endpoints["prospect-events"]
+        Azure__EventGrid__ProspectTopicKey = module.event_grid_topics.topic_access_keys["prospect-events"]
+        Azure__EventGrid__StudentTopicEndpoint = module.event_grid_topics.topic_endpoints["student-events"]
+        Azure__EventGrid__StudentTopicKey = module.event_grid_topics.topic_access_keys["student-events"]
+        Azure__EventGrid__InstructorTopicEndpoint = module.event_grid_topics.topic_endpoints["instructor-events"]
+        Azure__EventGrid__InstructorTopicKey = module.event_grid_topics.topic_access_keys["instructor-events"]
+      }
     }
     projection-service = {
       name     = "projection-service"
@@ -337,6 +358,14 @@ module "container_apps" {
       memory   = "0.5Gi"
       min_replicas = 1
       max_replicas = 3
+      ingress_enabled = true
+      external_ingress = true
+      env_vars = {
+        ConnectionStrings__ProjectionDatabase = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ApiGateway__Url = "https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io"
+      }
     }
     frontend = {
       name     = "frontend"
@@ -356,6 +385,38 @@ module "container_apps" {
 
   tags = var.tags
 }
+
+# Event Grid Event Subscriptions to ProjectionService webhook
+# Temporarily commented out - will create via Azure CLI after ingress is applied
+# resource "azurerm_eventgrid_event_subscription" "projection_subscriptions" {
+#   for_each = module.event_grid_topics.topic_ids
+#
+#   name  = "sub-${each.key}-to-projection"
+#   scope = each.value
+#
+#   webhook_endpoint {
+#     url = "https://${module.container_apps.container_app_fqdns["projection-service"]}/api/events/webhook"
+#   }
+#
+#   included_event_types = [
+#     "ProspectCreated",
+#     "ProspectUpdated",
+#     "ProspectMerged",
+#     "StudentCreated",
+#     "StudentUpdated",
+#     "StudentChanged",
+#     "InstructorCreated",
+#     "InstructorUpdated",
+#     "InstructorDeactivated"
+#   ]
+#
+#   retry_policy {
+#     max_delivery_attempts = 30
+#     event_time_to_live    = 1440  # 24 hours
+#   }
+#
+#   depends_on = [module.container_apps]
+# }
 
 # Grant Container Apps AcrPull permission
 resource "azurerm_role_assignment" "container_apps_acr_pull" {

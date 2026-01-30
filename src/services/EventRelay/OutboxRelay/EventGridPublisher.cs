@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Messaging.EventGrid;
+using Azure.Messaging;
 using Shared.Events;
 using System.Text.Json;
 
@@ -74,14 +75,16 @@ public class EventGridPublisher : IEventPublisher
             return false;
         }
 
-        var eventGridEvent = new EventGridEvent(
-            subject: eventEnvelope.Subject,
-            eventType: eventEnvelope.EventType,
-            dataVersion: eventEnvelope.SchemaVersion,
-            data: BinaryData.FromObjectAsJson(eventEnvelope))
+        // Create CloudEvent for CloudEvents v1.0 schema
+        var cloudEvent = new CloudEvent(
+            source: eventEnvelope.Producer ?? "events-system",
+            type: eventEnvelope.EventType,
+            jsonSerializableData: eventEnvelope)
         {
             Id = eventEnvelope.EventId,
-            EventTime = eventEnvelope.OccurredAt
+            Subject = eventEnvelope.Subject,
+            Time = eventEnvelope.OccurredAt,
+            DataContentType = "application/json"
         };
 
         // Retry with exponential backoff
@@ -89,7 +92,7 @@ public class EventGridPublisher : IEventPublisher
         {
             try
             {
-                await client.SendEventAsync(eventGridEvent, cancellationToken);
+                await client.SendEventAsync(cloudEvent, cancellationToken);
 
                 _logger.LogInformation(
                     "Successfully published event {EventId} ({EventType}) to topic '{TopicKey}' (correlation: {CorrelationId})",

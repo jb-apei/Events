@@ -1,6 +1,7 @@
 using Azure.Messaging.ServiceBus;
 using ProspectService.Commands;
 using ProspectService.Handlers;
+using ProspectService.Models;
 using System.Text.Json;
 
 namespace ProspectService.Services;
@@ -116,10 +117,18 @@ public class ServiceBusCommandConsumer : BackgroundService
 
     private async Task<bool> HandleCreateProspectAsync(string messageBody, IServiceScope scope, CancellationToken cancellationToken)
     {
-        var command = JsonSerializer.Deserialize<CreateProspectCommand>(messageBody);
+        // Deserialize the command message envelope
+        var envelope = JsonSerializer.Deserialize<CommandMessage>(messageBody);
+        if (envelope?.Payload == null)
+        {
+            _logger.LogError("Failed to deserialize command envelope");
+            return false;
+        }
+
+        var command = envelope.AsCreateProspectCommand();
         if (command == null)
         {
-            _logger.LogError("Failed to deserialize CreateProspectCommand");
+            _logger.LogError("Failed to deserialize CreateProspectCommand from payload");
             return false;
         }
 
@@ -131,10 +140,18 @@ public class ServiceBusCommandConsumer : BackgroundService
 
     private async Task<bool> HandleUpdateProspectAsync(string messageBody, IServiceScope scope, CancellationToken cancellationToken)
     {
-        var command = JsonSerializer.Deserialize<UpdateProspectCommand>(messageBody);
+        // Deserialize the command message envelope
+        var envelope = JsonSerializer.Deserialize<CommandMessage>(messageBody);
+        if (envelope?.Payload == null)
+        {
+            _logger.LogError("Failed to deserialize command envelope");
+            return false;
+        }
+
+        var command = envelope.AsUpdateProspectCommand();
         if (command == null)
         {
-            _logger.LogError("Failed to deserialize UpdateProspectCommand");
+            _logger.LogError("Failed to deserialize UpdateProspectCommand from payload");
             return false;
         }
 
