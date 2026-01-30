@@ -21,20 +21,22 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       
       - name: Build and push images to ACR
         run: |
           services=(
-            "api-gateway:src/services:ApiGateway/Dockerfile"
-            "prospect-service:src/services:ProspectService/Dockerfile"
-            "student-service:src/services:StudentService/Dockerfile"
-            "instructor-service:src/services:InstructorService/Dockerfile"
-            "event-relay:src/services:EventRelay/Dockerfile"
-            "projection-service:src/services:ProjectionService/Dockerfile"
-            "frontend:src/frontend:Dockerfile"
+            "api-gateway:.:src/services/ApiGateway/Dockerfile"
+            "prospect-service:.:src/services/ProspectService/Dockerfile"
+            "student-service:.:src/services/StudentService/Dockerfile"
+            "instructor-service:.:src/services/InstructorService/Dockerfile"
+            "event-relay:.:src/services/EventRelay/Dockerfile"
+            "projection-service:.:src/services/ProjectionService/Dockerfile"
+            "frontend:.:src/frontend/Dockerfile"
           )
           
           for service in "${services[@]}"; do
@@ -45,7 +47,7 @@ jobs:
               --registry ${{ env.ACR_NAME }} \
               --image "${name}:latest" \
               --image "${name}:${{ github.sha }}" \
-              -f "$context/$dockerfile" \
+              -f "$dockerfile" \
               $context
           done
 
@@ -64,9 +66,11 @@ jobs:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
       
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       
       - name: Terraform Init
         working-directory: infrastructure
@@ -97,15 +101,19 @@ jobs:
     
     steps:
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       
       - name: Restart container apps
         run: |
           apps=(
             "ca-events-api-gateway-dev"
             "ca-events-prospect-service-dev"
+            "ca-events-student-service-dev"
+            "ca-events-instructor-service-dev"
             "ca-events-projection-service-dev"
             "ca-events-event-relay-dev"
             "ca-events-frontend-dev"
