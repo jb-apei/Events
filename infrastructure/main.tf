@@ -312,7 +312,7 @@ module "container_apps" {
         ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
         ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
         Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        ApiGateway__Url = "https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io"
+        ApiGateway__Url = "https://${module.container_apps.container_app_fqdns["api-gateway"]}"
         ApiGateway__PushEvents = "true"
       }
     }
@@ -365,7 +365,7 @@ module "container_apps" {
         ConnectionStrings__ProjectionDatabase = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
         ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
         Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        ApiGateway__Url = "https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io"
+        ApiGateway__Url = "https://${module.container_apps.container_app_fqdns["api-gateway"]}"
       }
     }
     frontend = {
@@ -379,7 +379,7 @@ module "container_apps" {
       ingress_enabled = true
       external_ingress = true
       env_vars = {
-        API_GATEWAY_URL = "https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io"
+        API_GATEWAY_URL = "https://${module.container_apps.container_app_fqdns["api-gateway"]}"
       }
     }
   }
