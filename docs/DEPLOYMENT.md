@@ -44,10 +44,6 @@ This will:
 
 Automated deployment on every push to `master` branch.
 
-### 2. GitHub Actions (CI/CD)
-
-Automated deployment on every push to `master` branch.
-
 #### Setup GitHub Secrets
 
 **Option A: Automated Setup (Recommended)**

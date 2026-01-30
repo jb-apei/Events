@@ -13,13 +13,13 @@ Event-driven microservices architecture for managing Prospects, Students, and In
 │   └── SECRETS_SETUP.md             # GitHub secrets configuration
 ├── docs/
 │   ├── Architecture.md              # Detailed architecture documentation
+│   ├── DEPLOYMENT.md                # Deployment guide
 │   ├── api-data-contracts.md        # API contracts and schemas
 │   ├── development-mode-patterns.md # Dev environment setup
-│   ├── docker-deployment.md         # Docker/ACR deployment guide
 │   ├── service-implementation-checklist.md
 │   ├── services-startup-guide.md    # Service startup reference
 │   ├── swagger-api-documentation.md # API documentation
-│   └── system-test-summary.md       # Testing documentation
+│   └── TESTING_REFERENCE.md         # Testing documentation
 ├── src/
 │   ├── frontend/                    # React + TypeScript + Vite
 │   │   ├── components/              # React components (ProspectPage, etc.)
@@ -276,10 +276,11 @@ az containerapp logs show \
 ## Documentation
 
 - [Architecture.md](docs/Architecture.md) - Complete architecture documentation
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guide
 - [api-data-contracts.md](docs/api-data-contracts.md) - API schemas
 - [development-mode-patterns.md](docs/development-mode-patterns.md) - Local dev setup
 - [services-startup-guide.md](docs/services-startup-guide.md) - Service startup reference
+- [TESTING_REFERENCE.md](docs/TESTING_REFERENCE.md) - Testing and API reference
 
 ## Contributing
 
