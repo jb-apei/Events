@@ -23,4 +23,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ProspectService\ProspectService.csproj" />
+    <ProjectReference Include="..\Shared.Events\Shared.Events.csproj" />
+  </ItemGroup>
+
 </Project>

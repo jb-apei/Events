@@ -14,7 +14,7 @@ public static class ConfigurationExtensions
     /// <summary>
     /// Adds Azure Key Vault as a configuration source using managed identity in Azure environments.
     /// In local development, configuration comes from user-secrets (dotnet user-secrets) instead.
-    /// 
+    ///
     /// Configuration priority (highest to lowest):
     /// 1. Environment variables
     /// 2. Azure Key Vault (production)

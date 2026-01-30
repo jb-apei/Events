@@ -5,13 +5,13 @@
 .DESCRIPTION
     This script configures user-secrets for all services based on the .env.example template.
     User-secrets provide secure local configuration without committing sensitive values to git.
-    
+
     Benefits:
     - Secrets stored outside project directory (not committed to git)
     - Service-specific configuration isolation
     - No need for .env files in local development
     - Works seamlessly with dotnet run and Visual Studio
-    
+
 .PARAMETER Interactive
     Prompt for each configuration value (default: use development defaults)
 
@@ -63,21 +63,21 @@ $defaults = @{
     # SQL Server (local Docker container)
     TransactionalDbConnectionString = "Server=localhost,1433;Initial Catalog=EventsTransactional;User ID=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Encrypt=False"
     ReadModelDbConnectionString = "Server=localhost,1433;Initial Catalog=EventsReadModel;User ID=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Encrypt=False"
-    
+
     # Azurite (local storage emulator)
     ServiceBusConnectionString = "Endpoint=sb://localhost;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=NOTUSED;UseDevelopmentStorage=true"
-    
+
     # Local service URLs
     ApiGatewayUrl = "http://localhost:5037"
     ProspectServiceUrl = "http://localhost:5110"
     StudentServiceUrl = "http://localhost:5120"
     InstructorServiceUrl = "http://localhost:5130"
-    
+
     # JWT (development key)
     JwtSecretKey = "dev-super-secret-jwt-signing-key-minimum-32-characters-long"
     JwtIssuer = "EventsApiGateway"
     JwtAudience = "EventsClients"
-    
+
     # Event Grid (local testing - optional)
     EventGridProspectEndpoint = "http://localhost:4000/api/events"
     EventGridProspectKey = "local-development-key"
@@ -86,7 +86,7 @@ $defaults = @{
     EventGridInstructorEndpoint = "http://localhost:4002/api/events"
     EventGridInstructorKey = "local-development-key"
     EventGridWebhookKey = "webhook-validation-key-for-local-testing"
-    
+
     # Service Bus queues
     ProspectCommandQueue = "prospect-commands"
     StudentCommandQueue = "student-commands"
@@ -99,7 +99,7 @@ function Set-ServiceSecret {
         [string]$Key,
         [string]$Value
     )
-    
+
     Push-Location $ServicePath
     try {
         dotnet user-secrets set $Key $Value --quiet
@@ -115,12 +115,12 @@ Write-Host ""
 
 foreach ($service in $services) {
     Write-Host "[$($service.Name)]" -ForegroundColor Yellow
-    
+
     if (-not (Test-Path $service.Path)) {
         Write-Host "  ✗ Service path not found: $($service.Path)" -ForegroundColor Red
         continue
     }
-    
+
     # Initialize user-secrets for the service
     Push-Location $service.Path
     try {
@@ -131,7 +131,7 @@ foreach ($service in $services) {
     } finally {
         Pop-Location
     }
-    
+
     # Configure service-specific secrets
     switch ($service.Name) {
         "ApiGateway" {
@@ -145,7 +145,7 @@ foreach ($service in $services) {
             Set-ServiceSecret $service.Path "InstructorService:Url" $defaults.InstructorServiceUrl
             Write-Host "  ✓ Configured: JWT, Service Bus, Event Grid, Service URLs" -ForegroundColor Green
         }
-        
+
         "ProspectService" {
             Set-ServiceSecret $service.Path "ConnectionStrings:ProspectDb" $defaults.TransactionalDbConnectionString
             Set-ServiceSecret $service.Path "Azure:ServiceBus:ConnectionString" $defaults.ServiceBusConnectionString
@@ -153,7 +153,7 @@ foreach ($service in $services) {
             Set-ServiceSecret $service.Path "ApiGateway:Url" $defaults.ApiGatewayUrl
             Write-Host "  ✓ Configured: Database, Service Bus, API Gateway" -ForegroundColor Green
         }
-        
+
         "StudentService" {
             Set-ServiceSecret $service.Path "ConnectionStrings:StudentDb" $defaults.TransactionalDbConnectionString
             Set-ServiceSecret $service.Path "Azure:ServiceBus:ConnectionString" $defaults.ServiceBusConnectionString
@@ -161,7 +161,7 @@ foreach ($service in $services) {
             Set-ServiceSecret $service.Path "ApiGateway:Url" $defaults.ApiGatewayUrl
             Write-Host "  ✓ Configured: Database, Service Bus, API Gateway" -ForegroundColor Green
         }
-        
+
         "InstructorService" {
             Set-ServiceSecret $service.Path "ConnectionStrings:InstructorDb" $defaults.TransactionalDbConnectionString
             Set-ServiceSecret $service.Path "Azure:ServiceBus:ConnectionString" $defaults.ServiceBusConnectionString
@@ -169,12 +169,12 @@ foreach ($service in $services) {
             Set-ServiceSecret $service.Path "ApiGateway:Url" $defaults.ApiGatewayUrl
             Write-Host "  ✓ Configured: Database, Service Bus, API Gateway" -ForegroundColor Green
         }
-        
+
         "ProjectionService" {
             Set-ServiceSecret $service.Path "ConnectionStrings:ProjectionDatabase" $defaults.ReadModelDbConnectionString
             Write-Host "  ✓ Configured: Read Model Database" -ForegroundColor Green
         }
-        
+
         "EventRelay" {
             Set-ServiceSecret $service.Path "ConnectionStrings:ProspectDb" $defaults.TransactionalDbConnectionString
             Set-ServiceSecret $service.Path "Azure:EventGrid:ProspectTopicEndpoint" $defaults.EventGridProspectEndpoint
@@ -186,7 +186,7 @@ foreach ($service in $services) {
             Write-Host "  ✓ Configured: Outbox Database, Event Grid Topics" -ForegroundColor Green
         }
     }
-    
+
     Write-Host ""
 }
 

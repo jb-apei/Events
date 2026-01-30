@@ -17,73 +17,26 @@ public class ProspectCreatedTests
     }
 
     [Fact]
-    public void ProspectCreated_ShouldRequireProspectId()
+    public void ProspectCreated_ShouldContainDataPayload()
     {
-        // Arrange
-        var prospectId = Guid.NewGuid();
+        // Arrange & Act
         var prospectCreated = new ProspectCreated
         {
-            ProspectId = prospectId
+            Data = new ProspectCreatedData
+            {
+                ProspectId = 123,
+                FirstName = "John",
+                LastName = "Doe",
+                Email = "john.doe@example.com"
+            }
         };
 
-        // Act & Assert
-        prospectCreated.ProspectId.Should().Be(prospectId);
-    }
-
-    [Fact]
-    public void ProspectCreated_ShouldContainFirstName()
-    {
-        // Arrange
-        const string firstName = "John";
-        var prospectCreated = new ProspectCreated
-        {
-            FirstName = firstName
-        };
-
-        // Act & Assert
-        prospectCreated.FirstName.Should().Be(firstName);
-    }
-
-    [Fact]
-    public void ProspectCreated_ShouldContainLastName()
-    {
-        // Arrange
-        const string lastName = "Doe";
-        var prospectCreated = new ProspectCreated
-        {
-            LastName = lastName
-        };
-
-        // Act & Assert
-        prospectCreated.LastName.Should().Be(lastName);
-    }
-
-    [Fact]
-    public void ProspectCreated_ShouldContainEmail()
-    {
-        // Arrange
-        const string email = "john.doe@example.com";
-        var prospectCreated = new ProspectCreated
-        {
-            Email = email
-        };
-
-        // Act & Assert
-        prospectCreated.Email.Should().Be(email);
-    }
-
-    [Fact]
-    public void ProspectCreated_ShouldContainPhone()
-    {
-        // Arrange
-        const string phone = "+1-555-1234";
-        var prospectCreated = new ProspectCreated
-        {
-            Phone = phone
-        };
-
-        // Act & Assert
-        prospectCreated.Phone.Should().Be(phone);
+        // Assert
+        prospectCreated.Data.Should().NotBeNull();
+        prospectCreated.Data.ProspectId.Should().Be(123);
+        prospectCreated.Data.FirstName.Should().Be("John");
+        prospectCreated.Data.LastName.Should().Be("Doe");
+        prospectCreated.Data.Email.Should().Be("john.doe@example.com");
     }
 
     [Fact]
@@ -99,32 +52,43 @@ public class ProspectCreatedTests
     }
 
     [Fact]
-    public void ProspectCreated_ShouldSupportFullProspectData()
+    public void ProspectCreated_ShouldSetProducerByDefault()
+    {
+        // Arrange & Act
+        var prospectCreated = new ProspectCreated();
+
+        // Assert
+        prospectCreated.Producer.Should().Be("ProspectService");
+    }
+
+    [Fact]
+    public void ProspectCreated_ShouldSupportFullEventMetadata()
     {
         // Arrange
-        var prospectId = Guid.NewGuid();
         var correlationId = Guid.NewGuid().ToString();
+        var causationId = Guid.NewGuid().ToString();
 
         var prospectCreated = new ProspectCreated
         {
-            ProspectId = prospectId,
-            FirstName = "Jane",
-            LastName = "Smith",
-            Email = "jane.smith@example.com",
-            Phone = "+1-555-5678",
-            Producer = "ProspectService",
+            Data = new ProspectCreatedData
+            {
+                ProspectId = 456,
+                FirstName = "Jane",
+                LastName = "Smith",
+                Email = "jane.smith@example.com",
+                Phone = "+1-555-5678"
+            },
             CorrelationId = correlationId,
-            Subject = $"prospect/{prospectId}"
+            CausationId = causationId,
+            Subject = "prospect/456"
         };
 
         // Act & Assert
-        prospectCreated.ProspectId.Should().Be(prospectId);
-        prospectCreated.FirstName.Should().Be("Jane");
-        prospectCreated.LastName.Should().Be("Smith");
-        prospectCreated.Email.Should().Be("jane.smith@example.com");
-        prospectCreated.Phone.Should().Be("+1-555-5678");
-        prospectCreated.Producer.Should().Be("ProspectService");
+        prospectCreated.Data.ProspectId.Should().Be(456);
+        prospectCreated.Data.FirstName.Should().Be("Jane");
+        prospectCreated.Data.Email.Should().Be("jane.smith@example.com");
         prospectCreated.CorrelationId.Should().Be(correlationId);
-        prospectCreated.Subject.Should().Be($"prospect/{prospectId}");
+        prospectCreated.CausationId.Should().Be(causationId);
+        prospectCreated.Subject.Should().Be("prospect/456");
     }
 }

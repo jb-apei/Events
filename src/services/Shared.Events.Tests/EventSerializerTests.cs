@@ -11,13 +11,15 @@ public class EventSerializerTests
     public void EventSerializer_ShouldSerializeProspectCreatedToJson()
     {
         // Arrange
-        var prospectId = Guid.NewGuid();
         var prospectCreated = new ProspectCreated
         {
-            ProspectId = prospectId,
-            FirstName = "Test",
-            LastName = "User",
-            Email = "test@example.com",
+            Data = new ProspectCreatedData
+            {
+                ProspectId = 123,
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@example.com"
+            },
             Producer = "ProspectService"
         };
 
@@ -27,16 +29,15 @@ public class EventSerializerTests
         // Assert
         json.Should().NotBeNullOrEmpty();
         json.Should().Contain("\"eventType\":\"ProspectCreated\"");
-        json.Should().Contain($"\"prospectId\":\"{prospectId}\"");
+        json.Should().Contain("\"prospectId\":123");
         json.Should().Contain("\"firstName\":\"Test\"");
-        json.Should().Contain("\"email\":\"test@example.com\"");
+        json.Should().Contain("\"data\":{");
     }
 
     [Fact]
     public void EventSerializer_ShouldDeserializeProspectCreatedFromJson()
     {
         // Arrange
-        var prospectId = Guid.NewGuid();
         var json = $@"{{
             ""eventId"":""{Guid.NewGuid()}"",
             ""eventType"":""ProspectCreated"",
@@ -45,12 +46,14 @@ public class EventSerializerTests
             ""producer"":""ProspectService"",
             ""correlationId"":""{Guid.NewGuid()}"",
             ""causationId"":""{Guid.NewGuid()}"",
-            ""subject"":""prospect/{prospectId}"",
-            ""prospectId"":""{prospectId}"",
-            ""firstName"":""Test"",
-            ""lastName"":""User"",
-            ""email"":""test@example.com"",
-            ""phone"":""+1-555-1234""
+            ""subject"":""prospect/123"",
+            ""data"": {{
+                ""prospectId"":123,
+                ""firstName"":""Test"",
+                ""lastName"":""User"",
+                ""email"":""test@example.com"",
+                ""phone"":""+1-555-1234""
+            }}
         }}";
 
         // Act
@@ -59,10 +62,11 @@ public class EventSerializerTests
         // Assert
         deserialized.Should().NotBeNull();
         deserialized!.EventType.Should().Be("ProspectCreated");
-        deserialized.ProspectId.Should().Be(prospectId);
-        deserialized.FirstName.Should().Be("Test");
-        deserialized.LastName.Should().Be("User");
-        deserialized.Email.Should().Be("test@example.com");
+        deserialized.Data.Should().NotBeNull();
+        deserialized.Data.ProspectId.Should().Be(123);
+        deserialized.Data.FirstName.Should().Be("Test");
+        deserialized.Data.LastName.Should().Be("User");
+        deserialized.Data.Email.Should().Be("test@example.com");
     }
 
     [Fact]
@@ -72,10 +76,13 @@ public class EventSerializerTests
         var occurredAt = DateTime.UtcNow;
         var prospectCreated = new ProspectCreated
         {
-            ProspectId = Guid.NewGuid(),
-            FirstName = "Test",
-            LastName = "User",
-            Email = "test@example.com",
+            Data = new ProspectCreatedData
+            {
+                ProspectId = 789,
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@example.com"
+            },
             OccurredAt = occurredAt
         };
 
@@ -95,11 +102,14 @@ public class EventSerializerTests
         // Arrange
         var prospectCreated = new ProspectCreated
         {
-            ProspectId = Guid.NewGuid(),
-            FirstName = "Test",
-            LastName = "User",
-            Email = "test@example.com",
-            Phone = null // Nullable field
+            Data = new ProspectCreatedData
+            {
+                ProspectId = 999,
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@example.com",
+                Phone = null // Nullable field
+            }
         };
 
         // Act
@@ -108,7 +118,7 @@ public class EventSerializerTests
 
         // Assert
         deserialized.Should().NotBeNull();
-        deserialized!.Phone.Should().BeNull();
+        deserialized!.Data.Phone.Should().BeNull();
     }
 
     [Fact]
@@ -130,18 +140,22 @@ public class EventSerializerTests
         // Arrange
         var prospectCreated = new ProspectCreated
         {
-            ProspectId = Guid.NewGuid(),
-            FirstName = "Test",
-            LastName = "User"
+            Data = new ProspectCreatedData
+            {
+                ProspectId = 111,
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@example.com"
+            }
         };
 
         // Act
         var json = EventSerializer.Serialize(prospectCreated);
 
         // Assert
+        json.Should().Contain("\"data\":"); // data property
         json.Should().Contain("\"prospectId\""); // camelCase
         json.Should().Contain("\"firstName\""); // camelCase
         json.Should().Contain("\"lastName\""); // camelCase
-        json.Should().NotContain("\"ProspectId\""); // PascalCase should not exist
     }
 }

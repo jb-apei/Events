@@ -10,11 +10,42 @@ env:
   AZURE_RESOURCE_GROUP: rg-events-dev
   ACR_NAME: acreventsdevrcwv3i
   TERRAFORM_VERSION: 1.14.4
+  DOTNET_VERSION: '8.0.x'
 
 jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        working-directory: src/services
+        run: dotnet restore Events.sln
+
+      - name: Run tests
+        working-directory: src/services
+        run: dotnet test Events.sln --no-restore --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: '**/coverage.cobertura.xml'
+          fail_ci_if_error: false
+
   build:
     name: Build Container Images
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Checkout code

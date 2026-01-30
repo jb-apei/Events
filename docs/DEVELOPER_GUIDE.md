@@ -632,6 +632,146 @@ _logger.LogInformation("Creating prospect {Email} with correlation {CorrelationI
 
 ## Testing
 
+### Test Infrastructure
+
+The project uses xUnit for automated testing with the following structure:
+
+| Test Project | Purpose | Test Types |
+|-------------|---------|-----------|
+| `Shared.Events.Tests` | Event schema validation | Unit tests for EventEnvelope, event serialization |
+| `ProspectService.Tests` | Command handler logic | Integration tests with InMemory database |
+| `ApiGateway.Tests` | JWT service, WebSocket handlers | Unit + integration tests |
+
+**Testing Stack:**
+- **xUnit** - Test framework
+- **FluentAssertions** - Readable assertions (`result.Should().Be(expected)`)
+- **Moq** - Mocking dependencies
+- **EF Core InMemory** - In-memory database for integration tests
+
+### Running Tests
+
+```powershell
+# Run all tests
+cd src/services
+dotnet test Events.sln
+
+# Run specific project
+dotnet test Shared.Events.Tests/Shared.Events.Tests.csproj
+
+# Run with verbose output
+dotnet test --verbosity detailed
+
+# Run with code coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+### Current Test Coverage
+
+**Shared.Events.Tests** (22 tests):
+- EventEnvelope structure and metadata validation
+- ProspectCreated event schema and serialization
+- JSON serialization with camelCase property names
+- DateTime UTC preservation across serialization
+- Nullable field handling
+
+✅ **All 22 tests passing**
+
+### Writing New Tests
+
+**Unit Test Example (Event Schema):**
+```csharp
+[Fact]
+public void ProspectCreated_ShouldContainDataPayload()
+{
+    // Arrange & Act
+    var prospectCreated = new ProspectCreated
+    {
+        Data = new ProspectCreatedData
+        {
+            ProspectId = 123,
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "john.doe@example.com"
+        }
+    };
+
+    // Assert
+    prospectCreated.Data.Should().NotBeNull();
+    prospectCreated.Data.ProspectId.Should().Be(123);
+    prospectCreated.Data.FirstName.Should().Be("John");
+}
+```
+
+**Integration Test Example (Command Handler with InMemory DB):**
+```csharp
+public class CreateProspectCommandHandlerTests : IDisposable
+{
+    private readonly ProspectDbContext _dbContext;
+    private readonly CreateProspectCommandHandler _handler;
+
+    public CreateProspectCommandHandlerTests()
+    {
+        var options = new DbContextOptionsBuilder<ProspectDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        
+        _dbContext = new ProspectDbContext(options);
+        _handler = new CreateProspectCommandHandler(_dbContext);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldCreateProspect_WhenCommandIsValid()
+    {
+        // Arrange
+        var command = new CreateProspectCommand
+        {
+            FirstName = "John",
+            LastName = "Doe",
+            Email = "john@example.com"
+        };
+
+        // Act
+        var result = await _handler.Handle(command);
+
+        // Assert
+        var saved = await _dbContext.Prospects.FindAsync(result.ProspectId);
+        saved.Should().NotBeNull();
+        saved.FirstName.Should().Be("John");
+    }
+
+    public void Dispose() => _dbContext.Dispose();
+}
+```
+
+### Test Conventions
+
+1. **Naming:** `MethodName_Should{Behavior}_When{Condition}`
+2. **Arrange-Act-Assert:** Use clear test structure with comments
+3. **One assertion per test:** Test one behavior at a time
+4. **Dispose resources:** Implement `IDisposable` for integration tests
+5. **Use InMemory DB:** Avoid external dependencies in tests
+6. **FluentAssertions:** Use `.Should()` syntax for readability
+
+### CI/CD Integration
+
+Tests run automatically on every push via GitHub Actions:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run tests
+        run: dotnet test Events.sln --collect:"XPlat Code Coverage"
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: '**/coverage.cobertura.xml'
+```
+
+**Coverage Target:** 70% for handlers and domain logic.
+
 ### Manual Testing with PowerShell
 
 ```powershell
@@ -656,17 +796,6 @@ $prospects = Invoke-RestMethod -Uri "http://localhost:5037/api/prospects" -Heade
 # 4. Get Specific Prospect
 $prospect = Invoke-RestMethod -Uri "http://localhost:5037/api/prospects/1" -Headers $headers
 ```
-
-### Automated Tests
-
-*Note: Automated testing infrastructure is planned (see [ACTION_PLAN.md](ACTION_PLAN.md) Item 8).*
-
-Planned test projects:
-- `Shared.Events.Tests` - Unit tests for event schemas
-- `ProspectService.Tests` - Unit + integration tests
-- `ApiGateway.Tests` - WebSocket hub tests
-
-Target: 70% code coverage for handlers and domain logic.
 
 ---
 
