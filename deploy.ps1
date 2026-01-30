@@ -48,7 +48,13 @@ param(
     [switch]$SkipTerraform,
     
     [Parameter(Mandatory=$false)]
-    [switch]$SkipRestart
+    [switch]$SkipRestart,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$GitHubRepo = "",
+    
+    [Parameter(Mandatory=$false)]
+    [string]$GitHubBranch = "master"
 )
 
 $ErrorActionPreference = "Stop"
@@ -104,13 +110,23 @@ if (-not $SkipBuild) {
         Write-Info "Starting build for $($service.Name)..."
         
         $job = Start-Job -ScriptBlock {
-            param($Registry, $ImageName, $Context, $DockerfilePath)
+            param($Registry, $ImageName, $Context, $DockerfilePath, $GitRepo, $GitBranch)
             
-            az acr build --registry $Registry `
-                --image "${ImageName}:latest" `
-                -f "$Context/$DockerfilePath" `
-                $Context 2>&1
-        } -ArgumentList $RegistryName, $service.Name, $service.Context, $service.Dockerfile
+            if ($GitRepo) {
+                # Build from GitHub repository
+                az acr build --registry $Registry `
+                    --image "${ImageName}:latest" `
+                    -f "$Context/$DockerfilePath" `
+                    "${GitRepo}#${GitBranch}" 2>&1
+            }
+            else {
+                # Build from local context
+                az acr build --registry $Registry `
+                    --image "${ImageName}:latest" `
+                    -f "$Context/$DockerfilePath" `
+                    $Context 2>&1
+            }
+        } -ArgumentList $RegistryName, $service.Name, $service.Context, $service.Dockerfile, $GitHubRepo, $GitHubBranch
         
         $buildJobs += @{Job = $job; Name = $service.Name}
     }
