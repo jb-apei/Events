@@ -99,6 +99,8 @@ if (-not $SkipBuild) {
     $services = @(
         @{ Name = "api-gateway"; Context = "."; Dockerfile = "src/services/ApiGateway/Dockerfile" },
         @{ Name = "prospect-service"; Context = "."; Dockerfile = "src/services/ProspectService/Dockerfile" },
+        @{ Name = "student-service"; Context = "."; Dockerfile = "src/services/StudentService/Dockerfile" },
+        @{ Name = "instructor-service"; Context = "."; Dockerfile = "src/services/InstructorService/Dockerfile" },
         @{ Name = "event-relay"; Context = "."; Dockerfile = "src/services/EventRelay/Dockerfile" },
         @{ Name = "projection-service"; Context = "."; Dockerfile = "src/services/ProjectionService/Dockerfile" },
         @{ Name = "frontend"; Context = "."; Dockerfile = "src/frontend/Dockerfile" }

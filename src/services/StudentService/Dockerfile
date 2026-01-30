@@ -3,18 +3,18 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy solution file
-COPY ["Events.sln", "./"]
+COPY ["src/services/Events.sln", "./"]
 
 # Copy project files
-COPY ["StudentService/StudentService.csproj", "StudentService/"]
-COPY ["Shared.Events/Shared.Events.csproj", "Shared.Events/"]
+COPY ["src/services/StudentService/StudentService.csproj", "StudentService/"]
+COPY ["src/services/Shared.Events/Shared.Events.csproj", "Shared.Events/"]
 
 # Restore dependencies
 RUN dotnet restore "StudentService/StudentService.csproj"
 
 # Copy everything else
-COPY ["StudentService/", "StudentService/"]
-COPY ["Shared.Events/", "Shared.Events/"]
+COPY ["src/services/StudentService/", "StudentService/"]
+COPY ["src/services/Shared.Events/", "Shared.Events/"]
 
 # Build
 WORKDIR "/src/StudentService"
