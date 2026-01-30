@@ -64,16 +64,89 @@ Complete guide for setting up, configuring, and developing the Events project lo
 
 ### Configuration Strategy
 
-The project uses a layered configuration approach:
+The project implements **centralized configuration management** using three layers:
 
-1. **Local Development**: `.env` file (git-ignored)
-2. **Shared Defaults**: `appsettings.json` (non-sensitive values only)
-3. **Azure Deployment**: Key Vault + Container Apps environment variables
-4. **Terraform**: `terraform.tfvars` (git-ignored) with `terraform.tfvars.example` as template
+| Environment | Configuration Source | Setup Command |
+|------------|---------------------|---------------|
+| **Local Development** | .NET User Secrets | `.\setup-user-secrets.ps1` |
+| **Azure Deployment** | Azure Key Vault | Terraform provisions automatically |
+| **Non-sensitive defaults** | appsettings.json | Checked into git |
 
-### Environment Variables
+**Key Benefits:**
+- ✅ Secrets never committed to git
+- ✅ Service-specific configuration isolation
+- ✅ Zero .env files (uses .NET user-secrets locally)
+- ✅ Automatic Key Vault integration in Azure (managed identity)
+- ✅ Shared configuration library (Shared.Configuration) for consistency
 
-All configuration variables are documented in [`.env.example`](.env.example). Key categories:
+### Quick Start: Local Configuration
+
+Run this script to configure all services at once:
+
+```powershell
+.\setup-user-secrets.ps1
+```
+
+This initializes .NET user-secrets for all 6 services with development defaults:
+- SQL Server: `localhost:1433` with default credentials
+- Service Bus: Development endpoints
+- API Gateway: `http://localhost:5037`
+- JWT: Development signing key
+- Event Grid: Local testing endpoints
+
+**Verify configuration:**
+```powershell
+# View secrets for a specific service
+dotnet user-secrets list --project src/services/ApiGateway
+dotnet user-secrets list --project src/services/ProspectService
+
+# Clear all secrets (reset)
+dotnet user-secrets clear --project src/services/ApiGateway
+```
+
+**User-secrets storage location:**
+- Windows: `%APPDATA%\Microsoft\UserSecrets\<user-secrets-id>\secrets.json`
+- macOS/Linux: `~/.microsoft/usersecrets/<user-secrets-id>/secrets.json`
+
+### Configuration Architecture
+
+**Priority Order** (highest to lowest):
+1. Environment variables (Azure Container Apps)
+2. Azure Key Vault (production/staging)
+3. User Secrets (local development)
+4. appsettings.{Environment}.json
+5. appsettings.json
+
+**Shared.Configuration Library:**
+
+All services use `Shared.Configuration` project for:
+- `ConfigurationExtensions.AddKeyVaultIfConfigured()` - Auto-detects and configures Key Vault
+- `ConfigurationExtensions.ValidateRequiredConfiguration()` - Fail-fast validation
+- Configuration models: `ServiceBusOptions`, `EventGridOptions`, `JwtOptions`, `ApiGatewayOptions`
+
+**Example usage in Program.cs:**
+```csharp
+using Shared.Configuration;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add Key Vault if configured (Azure), otherwise use user-secrets (local)
+builder.Configuration.AddKeyVaultIfConfigured();
+
+// Validate required configuration
+builder.Configuration.ValidateRequiredConfiguration(
+    "ConnectionStrings:ProspectDb",
+    "Azure:ServiceBus:ConnectionString"
+);
+
+// Bind strongly-typed configuration
+builder.Services.Configure<ServiceBusOptions>(
+    builder.Configuration.GetSection(ServiceBusOptions.SectionName));
+```
+
+### Environment Variables Reference
+
+All configuration variables are documented in [`.env.example`](.env.example) (used as reference for user-secrets). Key categories:
 
 #### Database Connections
 ```bash

@@ -291,11 +291,11 @@ module "container_apps_environment" {
 # This allows services to reference each other without circular dependencies
 locals {
   container_app_base_domain = module.container_apps_environment.default_domain
-  
+
   # Construct FQDNs for services using the naming pattern: ca-{project}-{service}-{env}.{domain}
   api_gateway_fqdn = "ca-${var.project_name}-api-gateway-${var.environment}.${local.container_app_base_domain}"
   api_gateway_url  = "https://${local.api_gateway_fqdn}"
-  
+
   # Add other service FQDNs as needed for inter-service communication
   prospect_service_fqdn = "ca-${var.project_name}-prospect-service-${var.environment}.${local.container_app_base_domain}"
   projection_service_fqdn = "ca-${var.project_name}-projection-service-${var.environment}.${local.container_app_base_domain}"
