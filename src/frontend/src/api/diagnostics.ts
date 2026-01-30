@@ -39,7 +39,7 @@ export const diagnosticsApi = {
   },
 
   // Get outbox messages for a service
-  getOutboxMessages: async (serviceUrl: string): Promise<OutboxResponse> => {
+  getOutboxMessages: async (_serviceUrl: string): Promise<OutboxResponse> => {
     // Use API Gateway's outbox endpoint instead of calling services directly
     const token = localStorage.getItem('jwt_token');
     const response = await axios.get<any[]>(`${API_GATEWAY_URL}/outbox`, {
