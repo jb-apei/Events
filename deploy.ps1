@@ -61,17 +61,17 @@ function Write-Step {
 
 function Write-Success {
     param([string]$Message)
-    Write-Host "  ✓ $Message" -ForegroundColor Green
+    Write-Host "  [OK] $Message" -ForegroundColor Green
 }
 
 function Write-Info {
     param([string]$Message)
-    Write-Host "  → $Message" -ForegroundColor Yellow
+    Write-Host "  --> $Message" -ForegroundColor Yellow
 }
 
-function Write-Error-Custom {
+function Write-ErrorMsg {
     param([string]$Message)
-    Write-Host "  ✗ $Message" -ForegroundColor Red
+    Write-Host "  [ERROR] $Message" -ForegroundColor Red
 }
 
 # Verify Azure CLI is logged in
@@ -82,7 +82,7 @@ try {
     Write-Info "Subscription: $($account.name)"
 }
 catch {
-    Write-Error-Custom "Not logged in to Azure. Run 'az login' first."
+    Write-ErrorMsg "Not logged in to Azure. Please run: az login"
     exit 1
 }
 
@@ -128,7 +128,7 @@ if (-not $SkipBuild) {
             Write-Success "$name built successfully"
         }
         else {
-            Write-Error-Custom "$name build failed"
+            Write-ErrorMsg "$name build failed"
             $output | Write-Host
             exit 1
         }
@@ -164,7 +164,7 @@ if (-not $SkipTerraform) {
         Write-Success "Infrastructure updated successfully"
     }
     catch {
-        Write-Error-Custom "Terraform failed: $_"
+        Write-ErrorMsg "Terraform failed: $_"
         Pop-Location
         exit 1
     }
@@ -195,7 +195,7 @@ if (-not $SkipRestart) {
             $revision = az containerapp revision list `
                 --name $app `
                 --resource-group $ResourceGroup `
-                --query '[0].name' -o tsv
+                --query "[0].name" -o tsv
             
             if ($revision) {
                 az containerapp revision restart `
@@ -207,7 +207,7 @@ if (-not $SkipRestart) {
             }
         }
         catch {
-            Write-Error-Custom "Failed to restart $app (may not exist yet)"
+            Write-ErrorMsg "Failed to restart $app (may not exist yet)"
         }
     }
 }
@@ -227,11 +227,11 @@ Write-Host ""
 Write-Host "Container App Status:" -ForegroundColor Cyan
 foreach ($app in $status) {
     if ($app.Status -eq "Running") {
-        Write-Host "  ✓ $($app.Name): " -NoNewline -ForegroundColor Green
+        Write-Host "  [OK] $($app.Name): " -NoNewline -ForegroundColor Green
         Write-Host $app.Status -ForegroundColor White
     }
     else {
-        Write-Host "  ✗ $($app.Name): " -NoNewline -ForegroundColor Red
+        Write-Host "  [ERROR] $($app.Name): " -NoNewline -ForegroundColor Red
         Write-Host $app.Status -ForegroundColor White
     }
 }
