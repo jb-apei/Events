@@ -67,11 +67,11 @@ jobs:
         uses: azure/login@v1
         with:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
-      
+
       - name: Terraform Init
         working-directory: infrastructure
         run: terraform init
-      
+
       - name: Terraform Plan
         working-directory: infrastructure
         run: terraform plan -out=tfplan
@@ -80,7 +80,7 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-      
+
       - name: Terraform Apply
         working-directory: infrastructure
         run: terraform apply -auto-approve tfplan
