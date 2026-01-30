@@ -33,9 +33,9 @@ public class WebSocketManager
     public WebSocketManager(ILogger<WebSocketManager> logger)
     {
         _logger = logger;
-        
+
         // Start background cleanup task to remove dead connections every 10 seconds (more frequent)
-        _cleanupTimer = new Timer(async _ => await CleanupDeadConnectionsAsync(), 
+        _cleanupTimer = new Timer(async _ => await CleanupDeadConnectionsAsync(),
             null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
 
@@ -54,7 +54,7 @@ public class WebSocketManager
                 await RemoveConnectionAsync(connectionId);
             }
         }
-        
+
         // Also check for connections idle for too long (over 10 minutes)
         var idleTimeout = TimeSpan.FromMinutes(10);
         var idleConnections = _connections.Values

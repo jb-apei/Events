@@ -37,22 +37,22 @@
 param(
     [Parameter(Mandatory=$false)]
     [string]$RegistryName = "acreventsdevrcwv3i",
-    
+
     [Parameter(Mandatory=$false)]
     [string]$ResourceGroup = "rg-events-dev",
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$SkipBuild,
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$SkipTerraform,
-    
+
     [Parameter(Mandatory=$false)]
     [switch]$SkipRestart,
-    
+
     [Parameter(Mandatory=$false)]
     [string]$GitHubRepo = "",
-    
+
     [Parameter(Mandatory=$false)]
     [string]$GitHubBranch = "master"
 )
@@ -95,7 +95,7 @@ catch {
 # Build container images
 if (-not $SkipBuild) {
     Write-Step "Building container images in Azure ACR..."
-    
+
     $services = @(
         @{ Name = "api-gateway"; Context = "."; Dockerfile = "src/services/ApiGateway/Dockerfile" },
         @{ Name = "prospect-service"; Context = "."; Dockerfile = "src/services/ProspectService/Dockerfile" },
@@ -105,15 +105,15 @@ if (-not $SkipBuild) {
         @{ Name = "projection-service"; Context = "."; Dockerfile = "src/services/ProjectionService/Dockerfile" },
         @{ Name = "frontend"; Context = "."; Dockerfile = "src/frontend/Dockerfile" }
     )
-    
+
     $buildJobs = @()
-    
+
     foreach ($service in $services) {
         Write-Info "Starting build for $($service.Name)..."
-        
+
         $job = Start-Job -ScriptBlock {
             param($Registry, $ImageName, $Context, $DockerfilePath, $GitRepo, $GitBranch)
-            
+
             if ($GitRepo) {
                 # Build from GitHub repository
                 az acr build --registry $Registry `
@@ -129,19 +129,19 @@ if (-not $SkipBuild) {
                     $Context 2>&1
             }
         } -ArgumentList $RegistryName, $service.Name, $service.Context, $service.Dockerfile, $GitHubRepo, $GitHubBranch
-        
+
         $buildJobs += @{Job = $job; Name = $service.Name}
     }
-    
+
     Write-Info "Waiting for builds to complete (this may take several minutes)..."
-    
+
     foreach ($item in $buildJobs) {
         $job = $item.Job
         $name = $item.Name
-        
+
         Wait-Job $job | Out-Null
         $output = Receive-Job $job
-        
+
         if ($job.State -eq "Completed" -and $output -match "Succeeded") {
             Write-Success "$name built successfully"
         }
@@ -150,7 +150,7 @@ if (-not $SkipBuild) {
             $output | Write-Host
             exit 1
         }
-        
+
         Remove-Job $job
     }
 }
@@ -161,24 +161,24 @@ else {
 # Apply Terraform changes
 if (-not $SkipTerraform) {
     Write-Step "Applying Terraform infrastructure changes..."
-    
+
     Push-Location infrastructure
-    
+
     try {
         Write-Info "Running terraform plan..."
         terraform plan -out=tfplan
-        
+
         if ($LASTEXITCODE -ne 0) {
             throw "Terraform plan failed"
         }
-        
+
         Write-Info "Applying changes..."
         terraform apply tfplan
-        
+
         if ($LASTEXITCODE -ne 0) {
             throw "Terraform apply failed"
         }
-        
+
         Write-Success "Infrastructure updated successfully"
     }
     catch {
@@ -197,7 +197,7 @@ else {
 # Restart container apps
 if (-not $SkipRestart) {
     Write-Step "Restarting container apps with new images..."
-    
+
     $apps = @(
         "ca-events-api-gateway-dev",
         "ca-events-prospect-service-dev",
@@ -205,22 +205,22 @@ if (-not $SkipRestart) {
         "ca-events-event-relay-dev",
         "ca-events-frontend-dev"
     )
-    
+
     foreach ($app in $apps) {
         Write-Info "Restarting $app..."
-        
+
         try {
             $revision = az containerapp revision list `
                 --name $app `
                 --resource-group $ResourceGroup `
                 --query "[0].name" -o tsv
-            
+
             if ($revision) {
                 az containerapp revision restart `
                     --name $app `
                     --resource-group $ResourceGroup `
                     --revision $revision | Out-Null
-                
+
                 Write-Success "$app restarted"
             }
         }

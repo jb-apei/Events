@@ -48,7 +48,7 @@ $sp = az ad sp list --display-name $spName | ConvertFrom-Json
 
 if ($sp.Count -eq 0) {
     Write-Host "Service principal not found. Creating new one..." -ForegroundColor Yellow
-    
+
     # Create service principal with Contributor role
     Write-Host "--> Creating service principal: $spName" -ForegroundColor Yellow
     $spOutput = az ad sp create-for-rbac `
@@ -56,12 +56,12 @@ if ($sp.Count -eq 0) {
         --role Contributor `
         --scopes "/subscriptions/$subscriptionId/resourceGroups/rg-events-dev" `
         --output json | ConvertFrom-Json
-    
+
     $clientId = $spOutput.appId
     $clientSecret = $spOutput.password
-    
+
     Write-Host "[OK] Service principal created" -ForegroundColor Green
-    
+
     # Grant ACR push permission
     Write-Host "--> Granting ACR push permissions..." -ForegroundColor Yellow
     az role assignment create `
@@ -69,18 +69,18 @@ if ($sp.Count -eq 0) {
         --role "AcrPush" `
         --scope "/subscriptions/$subscriptionId/resourceGroups/rg-events-dev/providers/Microsoft.ContainerRegistry/registries/acreventsdevrcwv3i" `
         --output none
-    
+
     Write-Host "[OK] ACR permissions granted" -ForegroundColor Green
 }
 else {
     Write-Host "[OK] Service principal already exists" -ForegroundColor Green
     $clientId = $sp[0].appId
-    
+
     # Need to reset the secret since we can't retrieve it
     Write-Host "--> Resetting service principal credentials..." -ForegroundColor Yellow
     $resetOutput = az ad sp credential reset --id $clientId --output json | ConvertFrom-Json
     $clientSecret = $resetOutput.password
-    
+
     Write-Host "[OK] Credentials reset" -ForegroundColor Green
 }
 
@@ -98,7 +98,7 @@ foreach ($key in $secrets.Keys) {
     Write-Host "Setting $key..." -ForegroundColor Gray
     $value = $secrets[$key]
     echo $value | gh secret set $key
-    
+
     if ($LASTEXITCODE -eq 0) {
         Write-Host "[OK] $key set successfully" -ForegroundColor Green
     }

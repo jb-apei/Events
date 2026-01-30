@@ -104,7 +104,7 @@ app.UseWebSockets(webSocketOptions);
 app.Map("/ws/events", async context =>
 {
     var isDevelopment = app.Environment.IsDevelopment();
-    
+
     if (!context.User.Identity?.IsAuthenticated ?? true)
     {
         // Try to authenticate via query parameter token

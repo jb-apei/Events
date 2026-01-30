@@ -15,18 +15,18 @@ jobs:
   build:
     name: Build Container Images
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      
+
       - name: Build and push images to ACR
         run: |
           services=(
@@ -38,11 +38,11 @@ jobs:
             "projection-service:.:src/services/ProjectionService/Dockerfile"
             "frontend:.:src/frontend/Dockerfile"
           )
-          
+
           for service in "${services[@]}"; do
             IFS=':' read -r name context dockerfile <<< "$service"
             echo "Building $name..."
-            
+
             az acr build \
               --registry ${{ env.ACR_NAME }} \
               --image "${name}:latest" \
@@ -55,22 +55,23 @@ jobs:
     name: Apply Terraform
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
-      
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
       
       - name: Terraform Init
         working-directory: infrastructure
@@ -98,7 +99,7 @@ jobs:
     name: Restart Container Apps
     runs-on: ubuntu-latest
     needs: terraform
-    
+
     steps:
       - name: Azure Login
         uses: azure/login@v2
@@ -106,7 +107,8 @@ jobs:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
+
       - name: Restart container apps
         run: |
           apps=(
@@ -118,14 +120,14 @@ jobs:
             "ca-events-event-relay-dev"
             "ca-events-frontend-dev"
           )
-          
+
           for app in "${apps[@]}"; do
             echo "Restarting $app..."
             revision=$(az containerapp revision list \
               --name $app \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --query '[0].name' -o tsv)
-            
+
             if [ -n "$revision" ]; then
               az containerapp revision restart \
                 --name $app \
@@ -133,7 +135,7 @@ jobs:
                 --revision $revision
             fi
           done
-      
+
       - name: Verify deployment
         run: |
           az containerapp list \

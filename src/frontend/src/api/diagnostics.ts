@@ -45,7 +45,7 @@ export const diagnosticsApi = {
     const response = await axios.get<any[]>(`${API_GATEWAY_URL}/outbox`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
-    
+
     // Transform API Gateway response to match expected format
     return {
       total: response.data.length,
@@ -68,7 +68,7 @@ export const diagnosticsApi = {
       const response = await axios.get<any[]>(`${API_GATEWAY_URL}/outbox`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
-      
+
       const messages = response.data.map(msg => ({
         id: 0,
         eventId: msg.id,
