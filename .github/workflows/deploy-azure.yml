@@ -9,7 +9,7 @@ on:
 env:
   AZURE_RESOURCE_GROUP: rg-events-dev
   ACR_NAME: acreventsdevrcwv3i
-  TERRAFORM_VERSION: 1.6.0
+  TERRAFORM_VERSION: 1.14.4
 
 jobs:
   build:
