@@ -51,7 +51,7 @@ foreach ($service in $services) {
         # Also tag as latest
         docker tag $imageTag "${imageName}:latest"
         
-        Write-Host "  ✓ Built successfully" -ForegroundColor Green
+        Write-Host "  Built successfully" -ForegroundColor Green
         
         # Push to Docker Hub if not skipped
         if (-not $NoPush) {
@@ -67,13 +67,13 @@ foreach ($service in $services) {
                 throw "Failed to push ${imageName}:latest"
             }
             
-            Write-Host "  ✓ Pushed successfully" -ForegroundColor Green
+            Write-Host "  Pushed successfully" -ForegroundColor Green
         }
         
         Write-Host ""
     }
     catch {
-        Write-Host "  ✗ Error: $_" -ForegroundColor Red
+        Write-Host "  Error: $_" -ForegroundColor Red
         Write-Host ""
         exit 1
     }
