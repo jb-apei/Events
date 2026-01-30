@@ -180,19 +180,11 @@ ProjectionService
   - React Query for state management and caching
   - Cache invalidation on WebSocket event receipt
   - Form validation and error handling
+  - Event type selection (`EventTypePicker`)
+  - Dynamic form rendering based on selected event
+  - Real-time list updates
 - **Tech**: React 18, TypeScript, Vite, React Query, Axios
 - **WebSocket**: Connects to `/ws/events` endpoint for real-time event streaming
-- **Tech**: .NET Core, Azure Event Grid SDK, EF Core
-
-### React Frontend
-- **Purpose**: User interface for event-driven operations
-- **Responsibilities**:
-  - Event type selection (`EventTypePicker`)
-  - Dynamic form rendering (`ProspectForm`)
-  - Real-time list updates (`ProspectList`)
-  - WebSocket subscription management (`useWebSocket` hook)
-  - React Query cache management (`useProspects` hook)
-- **Tech**: React, TypeScript, React Query, native WebSocket API
 
 ## Event Standards
 
