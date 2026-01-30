@@ -103,6 +103,8 @@ app.UseWebSockets(webSocketOptions);
 // WebSocket endpoint
 app.Map("/ws/events", async context =>
 {
+    var isDevelopment = app.Environment.IsDevelopment();
+    
     if (!context.User.Identity?.IsAuthenticated ?? true)
     {
         // Try to authenticate via query parameter token
@@ -118,14 +120,15 @@ app.Map("/ws/events", async context =>
         }
     }
 
-    if (!context.User.Identity?.IsAuthenticated ?? true)
+    // In development, allow unauthenticated connections for easier testing
+    if (!isDevelopment && (!context.User.Identity?.IsAuthenticated ?? true))
     {
         context.Response.StatusCode = 401;
         await context.Response.WriteAsync("Unauthorized");
         return;
     }
 
-    var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+    var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
     var handler = context.RequestServices.GetRequiredService<WsHandler>();
     await handler.HandleWebSocketAsync(context, userId);
 });
