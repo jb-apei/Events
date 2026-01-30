@@ -7,13 +7,13 @@ ARG VITE_API_URL=https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azur
 ENV VITE_API_URL=$VITE_API_URL
 
 # Copy package files
-COPY package*.json ./
+COPY src/frontend/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy source code
-COPY . .
+COPY src/frontend/ .
 
 # Build the application with environment variable baked in
 RUN npm run build
@@ -29,7 +29,7 @@ RUN rm -rf ./*
 COPY --from=build /app/dist .
 
 # Copy nginx configuration template
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY src/frontend/nginx.conf /etc/nginx/templates/default.conf.template
 
 # Set default API Gateway URL (can be overridden by environment variable)
 ENV API_GATEWAY_URL=http://localhost:5037

@@ -97,11 +97,11 @@ if (-not $SkipBuild) {
     Write-Step "Building container images in Azure ACR..."
     
     $services = @(
-        @{ Name = "api-gateway"; Context = "src/services"; Dockerfile = "ApiGateway/Dockerfile" },
-        @{ Name = "prospect-service"; Context = "src/services"; Dockerfile = "ProspectService/Dockerfile" },
-        @{ Name = "event-relay"; Context = "src/services"; Dockerfile = "EventRelay/Dockerfile" },
-        @{ Name = "projection-service"; Context = "src/services"; Dockerfile = "ProjectionService/Dockerfile" },
-        @{ Name = "frontend"; Context = "src/frontend"; Dockerfile = "Dockerfile" }
+        @{ Name = "api-gateway"; Context = "."; Dockerfile = "src/services/ApiGateway/Dockerfile" },
+        @{ Name = "prospect-service"; Context = "."; Dockerfile = "src/services/ProspectService/Dockerfile" },
+        @{ Name = "event-relay"; Context = "."; Dockerfile = "src/services/EventRelay/Dockerfile" },
+        @{ Name = "projection-service"; Context = "."; Dockerfile = "src/services/ProjectionService/Dockerfile" },
+        @{ Name = "frontend"; Context = "."; Dockerfile = "src/frontend/Dockerfile" }
     )
     
     $buildJobs = @()

@@ -3,18 +3,18 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy solution file
-COPY ["Events.sln", "./"]
+COPY ["src/services/Events.sln", "./"]
 
 # Copy project files
-COPY ["EventRelay/EventRelay.csproj", "EventRelay/"]
-COPY ["Shared.Events/Shared.Events.csproj", "Shared.Events/"]
+COPY ["src/services/EventRelay/EventRelay.csproj", "EventRelay/"]
+COPY ["src/services/Shared.Events/Shared.Events.csproj", "Shared.Events/"]
 
 # Restore dependencies
 RUN dotnet restore "EventRelay/EventRelay.csproj"
 
 # Copy everything else
-COPY ["EventRelay/", "EventRelay/"]
-COPY ["Shared.Events/", "Shared.Events/"]
+COPY ["src/services/EventRelay/", "EventRelay/"]
+COPY ["src/services/Shared.Events/", "Shared.Events/"]
 
 # Build
 WORKDIR "/src/EventRelay"
