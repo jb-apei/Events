@@ -387,36 +387,36 @@ module "container_apps" {
 }
 
 # Event Grid Event Subscriptions to ProjectionService webhook
-# Temporarily commented out - will create via Azure CLI after ingress is applied
-# resource "azurerm_eventgrid_event_subscription" "projection_subscriptions" {
-#   for_each = module.event_grid_topics.topic_ids
-#
-#   name  = "sub-${each.key}-to-projection"
-#   scope = each.value
-#
-#   webhook_endpoint {
-#     url = "https://${module.container_apps.container_app_fqdns["projection-service"]}/api/events/webhook"
-#   }
-#
-#   included_event_types = [
-#     "ProspectCreated",
-#     "ProspectUpdated",
-#     "ProspectMerged",
-#     "StudentCreated",
-#     "StudentUpdated",
-#     "StudentChanged",
-#     "InstructorCreated",
-#     "InstructorUpdated",
-#     "InstructorDeactivated"
-#   ]
-#
-#   retry_policy {
-#     max_delivery_attempts = 30
-#     event_time_to_live    = 1440  # 24 hours
-#   }
-#
-#   depends_on = [module.container_apps]
-# }
+resource "azurerm_eventgrid_event_subscription" "projection_subscriptions" {
+  for_each = module.event_grid_topics.topic_ids
+
+  name                  = "sub-${each.key}-to-projection"
+  scope                 = each.value
+  event_delivery_schema = "CloudEventSchemaV1_0"
+
+  webhook_endpoint {
+    url = "https://${module.container_apps.container_app_fqdns["projection-service"]}/events/webhook"
+  }
+
+  included_event_types = [
+    "ProspectCreated",
+    "ProspectUpdated",
+    "ProspectMerged",
+    "StudentCreated",
+    "StudentUpdated",
+    "StudentChanged",
+    "InstructorCreated",
+    "InstructorUpdated",
+    "InstructorDeactivated"
+  ]
+
+  retry_policy {
+    max_delivery_attempts = 30
+    event_time_to_live    = 1440  # 24 hours
+  }
+
+  depends_on = [module.container_apps]
+}
 
 # Grant Container Apps AcrPull permission
 resource "azurerm_role_assignment" "container_apps_acr_pull" {

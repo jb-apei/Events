@@ -1,5 +1,6 @@
+using Azure.Messaging;
+using Azure.Messaging;
 using Azure.Messaging.EventGrid;
-using Azure.Messaging.EventGrid.SystemEvents;
 using ProjectionService.EventHandlers;
 using Shared.Events;
 using Shared.Events.Prospects;
@@ -38,72 +39,57 @@ public class EventDispatcher
         string requestBody,
         CancellationToken cancellationToken = default)
     {
-        var events = EventGridEvent.ParseMany(BinaryData.FromString(requestBody));
+        // Parse CloudEvents (Event Grid uses CloudEvents v1.0 schema)
+        var cloudEvents = CloudEvent.ParseMany(BinaryData.FromString(requestBody));
 
-        foreach (var egEvent in events)
+        foreach (var cloudEvent in cloudEvents)
         {
-            // Handle subscription validation
-            if (egEvent.EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
-            {
-                var validationData = egEvent.Data?.ToObjectFromJson<SubscriptionValidationEventData>();
-                if (validationData?.ValidationCode != null)
-                {
-                    _logger.LogInformation("Event Grid subscription validation received. Code: {ValidationCode}",
-                        validationData.ValidationCode);
-
-                    return new EventGridValidationResponse
-                    {
-                        ValidationResponse = validationData.ValidationCode
-                    };
-                }
-            }
-
             // Route domain events to handlers
             try
             {
-                await RouteEventAsync(egEvent, cancellationToken);
+                await RouteCloudEventAsync(cloudEvent, cancellationToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "Failed to process event {EventId} ({EventType}). Will retry on next webhook delivery.",
-                    egEvent.Id,
-                    egEvent.EventType);
+                    cloudEvent.Id,
+                    cloudEvent.Type);
 
                 // Re-throw to trigger Event Grid retry
                 throw;
             }
         }
 
-        return null; // No validation response needed for regular events
+        return null;
     }
 
     /// <summary>
     /// Routes an Event Grid event to the appropriate handler based on event type.
     /// </summary>
-    private async Task RouteEventAsync(EventGridEvent egEvent, CancellationToken cancellationToken)
+    private async Task RouteCloudEventAsync(CloudEvent cloudEvent, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
             "Routing event {EventId} ({EventType}) from subject {Subject}",
-            egEvent.Id,
-            egEvent.EventType,
-            egEvent.Subject);
+            cloudEvent.Id,
+            cloudEvent.Type,
+            cloudEvent.Subject);
 
-        switch (egEvent.EventType)
+        switch (cloudEvent.Type)
         {
             // Prospect events
             case "ProspectCreated":
-                var prospectCreated = DeserializeEvent<ProspectCreated>(egEvent);
+                var prospectCreated = DeserializeCloudEvent<ProspectCreated>(cloudEvent);
                 await _prospectEventHandler.HandleProspectCreatedAsync(prospectCreated, cancellationToken);
                 break;
 
             case "ProspectUpdated":
-                var prospectUpdated = DeserializeEvent<ProspectUpdated>(egEvent);
+                var prospectUpdated = DeserializeCloudEvent<ProspectUpdated>(cloudEvent);
                 await _prospectEventHandler.HandleProspectUpdatedAsync(prospectUpdated, cancellationToken);
                 break;
 
             case "ProspectMerged":
-                var prospectMerged = DeserializeEvent<ProspectMerged>(egEvent);
+                var prospectMerged = DeserializeCloudEvent<ProspectMerged>(cloudEvent);
                 await _prospectEventHandler.HandleProspectMergedAsync(prospectMerged, cancellationToken);
                 break;
 
@@ -112,7 +98,7 @@ public class EventDispatcher
             case "StudentUpdated":
             case "StudentChanged":
                 await _studentEventHandler.HandleStudentCreatedAsync(
-                    DeserializeEventEnvelope(egEvent), cancellationToken);
+                    DeserializeCloudEventEnvelope(cloudEvent), cancellationToken);
                 break;
 
             // Instructor events (stubs)
@@ -120,11 +106,11 @@ public class EventDispatcher
             case "InstructorUpdated":
             case "InstructorDeactivated":
                 await _instructorEventHandler.HandleInstructorCreatedAsync(
-                    DeserializeEventEnvelope(egEvent), cancellationToken);
+                    DeserializeCloudEventEnvelope(cloudEvent), cancellationToken);
                 break;
 
             default:
-                _logger.LogWarning("Unknown event type: {EventType}. Ignoring.", egEvent.EventType);
+                _logger.LogWarning("Unknown event type: {EventType}. Ignoring.", cloudEvent.Type);
                 break;
         }
     }
@@ -132,31 +118,30 @@ public class EventDispatcher
     /// <summary>
     /// Deserializes Event Grid event data to typed event envelope.
     /// </summary>
-    private T DeserializeEvent<T>(EventGridEvent egEvent) where T : EventEnvelope
+    private T DeserializeCloudEvent<T>(CloudEvent cloudEvent) where T : EventEnvelope
     {
         try
         {
-            var eventData = egEvent.Data?.ToString();
-            if (string.IsNullOrEmpty(eventData))
+            if (cloudEvent.Data == null)
             {
-                throw new InvalidOperationException($"Event {egEvent.Id} has no data payload");
+                throw new InvalidOperationException($"CloudEvent {cloudEvent.Id} has no data payload");
             }
 
-            var eventEnvelope = JsonSerializer.Deserialize<T>(eventData, new JsonSerializerOptions
+            var eventEnvelope = cloudEvent.Data.ToObjectFromJson<T>(new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
             if (eventEnvelope == null)
             {
-                throw new InvalidOperationException($"Failed to deserialize event {egEvent.Id} to type {typeof(T).Name}");
+                throw new InvalidOperationException($"Failed to deserialize event {cloudEvent.Id} to type {typeof(T).Name}");
             }
 
             return eventEnvelope;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize event {EventId} to type {EventType}", egEvent.Id, typeof(T).Name);
+            _logger.LogError(ex, "Failed to deserialize event {EventId} to type {EventType}", cloudEvent.Id, typeof(T).Name);
             throw;
         }
     }
@@ -164,22 +149,21 @@ public class EventDispatcher
     /// <summary>
     /// Deserializes Event Grid event to base EventEnvelope (for unknown event types).
     /// </summary>
-    private EventEnvelope DeserializeEventEnvelope(EventGridEvent egEvent)
+    private EventEnvelope DeserializeCloudEventEnvelope(CloudEvent cloudEvent)
     {
-        var eventData = egEvent.Data?.ToString();
-        if (string.IsNullOrEmpty(eventData))
+        if (cloudEvent.Data == null)
         {
-            throw new InvalidOperationException($"Event {egEvent.Id} has no data payload");
+            throw new InvalidOperationException($"CloudEvent {cloudEvent.Id} has no data payload");
         }
 
-        var eventEnvelope = JsonSerializer.Deserialize<GenericEventEnvelope>(eventData, new JsonSerializerOptions
+        var eventEnvelope = cloudEvent.Data.ToObjectFromJson<GenericEventEnvelope>(new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         });
 
         if (eventEnvelope == null)
         {
-            throw new InvalidOperationException($"Failed to deserialize event {egEvent.Id}");
+            throw new InvalidOperationException($"Failed to deserialize event {cloudEvent.Id}");
         }
 
         return eventEnvelope;
