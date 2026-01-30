@@ -26,23 +26,23 @@ public class WebSocketManager
 {
     private readonly ConcurrentDictionary<string, WebSocketConnection> _connections = new();
     private readonly ILogger<WebSocketManager> _logger;
-    private const int MaxConnectionsPerUser = 5;
-    private const int MaxTotalConnections = 1000;
+    private const int MaxConnectionsPerUser = 50; // Increased from 5 to allow multiple tabs/reconnects
+    private const int MaxTotalConnections = 10000; // Increased for scalability
     private readonly Timer _cleanupTimer;
 
     public WebSocketManager(ILogger<WebSocketManager> logger)
     {
         _logger = logger;
         
-        // Start background cleanup task to remove dead connections every 30 seconds
+        // Start background cleanup task to remove dead connections every 10 seconds (more frequent)
         _cleanupTimer = new Timer(async _ => await CleanupDeadConnectionsAsync(), 
-            null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+            null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
     }
 
     private async Task CleanupDeadConnectionsAsync()
     {
         var deadConnections = _connections.Values
-            .Where(c => c.Socket.State != WebSocketState.Open)
+            .Where(c => c.Socket.State != WebSocketState.Open && c.Socket.State != WebSocketState.Connecting)
             .Select(c => c.ConnectionId)
             .ToList();
 
@@ -51,6 +51,28 @@ public class WebSocketManager
             _logger.LogInformation("Cleaning up {Count} dead WebSocket connections", deadConnections.Count);
             foreach (var connectionId in deadConnections)
             {
+                await RemoveConnectionAsync(connectionId);
+            }
+        }
+        
+        // Also check for connections idle for too long (over 10 minutes)
+        var idleTimeout = TimeSpan.FromMinutes(10);
+        var idleConnections = _connections.Values
+            .Where(c => DateTime.UtcNow - c.ConnectedAt > idleTimeout && c.Socket.State == WebSocketState.Open)
+            .Select(c => c.ConnectionId)
+            .ToList();
+
+        if (idleConnections.Any())
+        {
+            _logger.LogInformation("Cleaning up {Count} idle WebSocket connections", idleConnections.Count);
+            foreach (var connectionId in idleConnections)
+            {
+                var conn = _connections[connectionId];
+                try
+                {
+                    await conn.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Idle timeout", CancellationToken.None);
+                }
+                catch { }
                 await RemoveConnectionAsync(connectionId);
             }
         }
