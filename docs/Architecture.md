@@ -114,40 +114,74 @@ ProjectionService
 
 ## Service Responsibilities
 
+### ApiGateway
+- **Purpose**: API entry point, real-time communication hub, and outbox management
+- **Responsibilities**:
+  - REST API endpoints for commands (`POST /api/prospects`, `/api/students`, `/api/instructors`)
+  - JWT authentication middleware (optional in development mode)
+  - Event Grid webhook receiver (`POST /api/events/webhook`)
+  - WebSocket connection manager (`/ws/events`) - up to 50 connections per user
+  - Filter and push events to authorized WebSocket clients
+  - Outbox management API (`GET /api/outbox`, `POST /api/outbox/{id}/retry`)
+  - CORS configuration for frontend
+- **Tech**: .NET Core 8.0, ASP.NET Core WebSockets, JWT middleware
+- **Configuration**: Development mode allows unauthenticated WebSocket access
+
 ### ProspectService
 - **Purpose**: Write model for Prospect aggregate
 - **Responsibilities**:
-  - Process CreateProspect, UpdateProspect commands from Service Bus
+  - Process CreateProspect, UpdateProspect, MergeProspect commands from Service Bus
   - Enforce business rules and validation
-  - Save domain entities and events to Outbox in single transaction
-- **Tech**: .NET Core, EF Core, Azure Service Bus SDK
+  - Save Prospect entities and events to Outbox in single transaction
+  - Implement transactional outbox pattern
+- **Tech**: .NET Core 8.0, EF Core, Azure Service Bus SDK, Azure SQL
+
+### StudentService
+- **Purpose**: Write model for Student aggregate
+- **Responsibilities**:
+  - Process CreateStudent, UpdateStudent, StudentChanged commands
+  - Enforce business rules and validation
+  - Save Student entities and events to Outbox in single transaction
+- **Tech**: .NET Core 8.0, EF Core, Azure Service Bus SDK, Azure SQL
+
+### InstructorService
+- **Purpose**: Write model for Instructor aggregate
+- **Responsibilities**:
+  - Process CreateInstructor, UpdateInstructor, DeactivateInstructor commands
+  - Enforce business rules and validation
+  - Save Instructor entities and events to Outbox in single transaction
+- **Tech**: .NET Core 8.0, EF Core, Azure Service Bus SDK, Azure SQL
 
 ### EventRelay
-- **Purpose**: Reliable event publishing
+- **Purpose**: Reliable event publishing from Outbox to Event Grid
 - **Responsibilities**:
-  - Poll Outbox table for unpublished events (e.g., every 5 seconds)
-  - Publish events to Event Grid
-  - Mark events as published
+  - Poll Outbox table for unpublished events (configurable interval, default 5 seconds)
+  - Publish events to appropriate Event Grid topics
+  - Mark events as published after successful delivery
   - Handle Event Grid throttling and retries
-- **Tech**: .NET Core background service, Azure Event Grid SDK
-
-### ApiGateway
-- **Purpose**: API entry point and real-time communication hub
-- **Responsibilities**:
-  - REST API endpoints for commands (`POST /api/prospects`)
-  - JWT authentication middleware
-  - Event Grid webhook receiver (`POST /api/events/webhook`)
-  - WebSocket connection manager (`wss://api.example.com/ws/events`)
-  - Filter and push events to authorized WebSocket clients
-- **Tech**: .NET Core, ASP.NET Core WebSockets, JWT middleware
+  - Support multiple outbox sources (Prospect, Student, Instructor databases)
+- **Tech**: .NET Core 8.0 background service, Azure Event Grid SDK, Polly for retries
 
 ### ProjectionService
-- **Purpose**: Build and maintain read models
+- **Purpose**: Build and maintain read models from domain events
 - **Responsibilities**:
-  - Subscribe to Event Grid topics
-  - Consume ProspectCreated, ProspectUpdated events
-  - Update read model tables (e.g., ProspectSummary, ProspectSearch)
-  - Implement inbox pattern for idempotency
+  - Subscribe to Event Grid topics via webhook subscriptions
+  - Consume ProspectCreated, ProspectUpdated, StudentCreated, StudentUpdated, InstructorCreated, InstructorUpdated events
+  - Update read model tables (ProspectSummary, StudentSummary, InstructorSummary)
+  - Implement Inbox pattern for idempotency (7-day dedupe window)
+  - Query API for read models (`GET /api/prospects`, `/api/students`, `/api/instructors`)
+- **Tech**: .NET Core 8.0, EF Core, Azure Event Grid webhooks, Azure SQL
+
+### Frontend
+- **Purpose**: User interface for identity management
+- **Responsibilities**:
+  - Display and manage Prospects, Students, and Instructors
+  - Real-time updates via WebSocket connection
+  - React Query for state management and caching
+  - Cache invalidation on WebSocket event receipt
+  - Form validation and error handling
+- **Tech**: React 18, TypeScript, Vite, React Query, Axios
+- **WebSocket**: Connects to `/ws/events` endpoint for real-time event streaming
 - **Tech**: .NET Core, Azure Event Grid SDK, EF Core
 
 ### React Frontend
@@ -234,33 +268,116 @@ ProjectionService
 ## Deployment
 
 ### Azure Resources
-- **Azure Container Apps**: ProspectService, EventRelay, ApiGateway, ProjectionService
-- **Azure Service Bus**: Namespace with `identity-commands` queue
-- **Azure Event Grid**: Custom topics: `prospect-events`, `student-events`, `instructor-events`
-- **Azure SQL**: Two databases (transactional, read model)
-- **Azure Key Vault**: JWT signing keys, connection strings
+
+**Hosting:**
+- **Azure Container Apps Environment**: `cae-events-dev` (shared environment for all services)
+- **Container Apps** (7 total):
+  - `ca-events-api-gateway-dev` (external ingress, HTTP/WebSocket)
+  - `ca-events-prospect-service-dev` (internal only)
+  - `ca-events-student-service-dev` (internal only)
+  - `ca-events-instructor-service-dev` (internal only)
+  - `ca-events-event-relay-dev` (internal only, background job)
+  - `ca-events-projection-service-dev` (internal only, webhook receiver)
+  - `ca-events-frontend-dev` (external ingress, HTTPS)
+
+**Messaging:**
+- **Azure Service Bus**: `sb-events-dev-rcwv3i`
+  - Queue: `identity-commands`
+  - Topics: `prospect-dlq` (dead-letter queue)
+- **Azure Event Grid**: 
+  - Topics: `evgt-events-prospect-events-dev`, `evgt-events-student-events-dev`, `evgt-events-instructor-events-dev`
+  - Subscriptions: Webhook to ProjectionService
+
+**Data:**
+- **Azure SQL Server**: `sql-events-dev`
+  - Database: `db-events-transactional-dev` (write models + Outbox)
+  - Database: `db-events-readmodel-dev` (projections)
+  - Tier: Basic (5 DTU, 2 GB storage)
+  - Firewall: Allow Azure services
+
+**Observability:**
+- **Application Insights**: `appi-events-dev` (all services configured)
+- **Log Analytics Workspace**: `log-events-dev` (centralized logging)
+
+**Security:**
+- **Azure Key Vault**: `kv-events-dev-rcwv3i`
+  - Secrets: Service Bus connection, SQL connections, App Insights keys
+  - Access: Managed identities for each container app
+- **Azure Container Registry**: `acreventsdevrcwv3i`
+  - All service images stored here
+  - ACR pull permissions via managed identities
 
 ### Infrastructure as Code
-- **Bicep/Terraform**: All resources defined in `/infrastructure`
-- **Environments**: Dev, Test, Prod (isolated resources)
 
-## MVP Scope (Phase 1)
+- **Terraform**: All resources defined in `/infrastructure` directory
+- **Modules**: Custom modules for Container Apps and Event Grid Topics
+- **Azure Verified Modules (AVM)**: Used for Service Bus, SQL, Key Vault, Log Analytics
+- **State**: Terraform state stored locally (consider Azure Storage for production)
+- **Environments**: Currently dev only (resource names include `dev` suffix)
 
-Focus: **Prospect Create and Update only**
+### Deployment Pipeline
 
-### In Scope
-- ProspectCreated event
-- ProspectUpdated event
-- React UI with smart forms
-- Real-time WebSocket updates
-- Transactional Outbox pattern
-- Basic authentication (JWT)
+**GitHub Actions** (`.github/workflows/deploy-azure.yml`):
+1. **Build Job**: Builds all 7 images in ACR from GitHub source
+2. **Terraform Job**: Applies infrastructure changes
+3. **Restart Job**: Updates container apps to pull latest images
 
-### Out of Scope (Future)
-- Student events (Create, Update, Changed)
-- Instructor events (Create, Update, Deactivate)
-- ProspectMerged event
-- Advanced authorization (RBAC)
+**Authentication**: Service principal with client secret (not OIDC)
+
+**Secrets Required**:
+- `ARM_CLIENT_ID`
+- `ARM_CLIENT_SECRET`
+- `ARM_SUBSCRIPTION_ID`
+- `ARM_TENANT_ID`
+
+### Resource URLs
+
+- **Frontend**: https://ca-events-frontend-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
+- **API Gateway**: https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
+- **WebSocket**: wss://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/ws/events
+
+## Implementation Status
+
+### Completed (Production Ready)
+
+**Services:**
+- ✅ ApiGateway (REST API + WebSocket hub + Outbox management)
+- ✅ ProspectService (Create, Update commands)
+- ✅ StudentService (Create, Update, Changed commands)
+- ✅ InstructorService (Create, Update, Deactivate commands)
+- ✅ EventRelay (Outbox publisher)
+- ✅ ProjectionService (Read model updates)
+- ✅ Frontend (React UI with real-time updates)
+
+**Infrastructure:**
+- ✅ Azure Container Apps deployment
+- ✅ Service Bus queue for commands
+- ✅ Event Grid topics for all three aggregates
+- ✅ SQL databases (transactional + read models)
+- ✅ Key Vault for secrets
+- ✅ Application Insights for monitoring
+- ✅ GitHub Actions CI/CD pipeline
+
+**Features:**
+- ✅ Transactional Outbox pattern
+- ✅ WebSocket real-time updates (50 connections/user)
+- ✅ Inbox pattern for idempotency (7-day dedupe)
+- ✅ React Query state management
+- ✅ Development mode (unauthenticated WebSocket)
+- ✅ Outbox management API
+- ✅ Automated deployment scripts
+
+### Planned (Future Enhancements)
+
+- 🔜 JWT authentication implementation (structure in place, not enforced)
+- 🔜 RBAC/multi-tenancy authorization
+- 🔜 ProspectMerged event and command
+- 🔜 Advanced query capabilities in ProjectionService
+- 🔜 Event replay functionality
+- 🔜 Service Bus DLQ monitoring and retry
+- 🔜 Comprehensive integration tests
+- 🔜 Production environment configuration
+- 🔜 Azure Storage backend for Terraform state
 - Event replay UI
 - Multi-tenant isolation
 
