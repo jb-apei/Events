@@ -193,9 +193,173 @@ Jwt__ExpirationMinutes=60
 
 ---
 
+## Logging & Observability
+
+### Logging Standards
+
+All services use **structured logging** with Application Insights and OpenTelemetry for distributed tracing.
+
+#### Correlation ID Propagation
+
+Every request is tracked with a **correlation ID** that flows through:
+1. API Gateway receives or generates `X-Correlation-Id` header
+2. Correlation ID added to all logs and telemetry
+3. Service Bus messages include correlation ID
+4. Event Grid events include `correlationId` field
+5. WebSocket messages tagged with correlation ID
+
+**Example: Tracking a Request**
+```
+User Action → API Gateway (correlationId: abc-123)
+  → Service Bus Command (correlationId: abc-123)
+  → ProspectService Handler (correlationId: abc-123)
+  → Database Write (correlationId: abc-123)
+  → Outbox Event (correlationId: abc-123)
+  → Event Grid Publish (correlationId: abc-123)
+  → ProjectionService (correlationId: abc-123)
+```
+
+#### Structured Logging Pattern
+
+```csharp
+// ✅ Good: Structured logging with context
+_logger.LogInformation(
+    "Processing {CommandType} for {EntityType} {EntityId}",
+    command.GetType().Name,
+    "Prospect",
+    prospectId);
+
+// ❌ Bad: String interpolation loses structure
+_logger.LogInformation($"Processing {command.GetType().Name}...");
+```
+
+#### Log Levels
+
+| Level | Use Case | Example |
+|-------|----------|---------|
+| **Trace** | Detailed diagnostic info (disabled in prod) | Method entry/exit |
+| **Debug** | Development debugging (disabled in prod) | Variable values |
+| **Information** | General flow tracking | "Command received", "Event published" |
+| **Warning** | Unexpected but handled situations | Retry attempts, fallback logic |
+| **Error** | Failures requiring attention | Exceptions, validation errors |
+| **Critical** | System-wide failures | Database unavailable, Service Bus down |
+
+#### Application Insights Queries
+
+**Find all events for a correlation ID:**
+```kusto
+traces
+| union exceptions
+| where customDimensions.correlation_id == "abc-123"
+| order by timestamp asc
+| project timestamp, severityLevel, message, operation_Name
+```
+
+**Track command-to-event flow:**
+```kusto
+dependencies
+| where name contains "ServiceBus" or name contains "EventGrid"
+| where customDimensions.correlation_id == "abc-123"
+| project timestamp, name, target, duration, resultCode
+```
+
+**Find slow database queries:**
+```kusto
+dependencies
+| where type == "SQL"
+| where duration > 1000  // > 1 second
+| summarize count(), avg(duration) by operation_Name
+| order by avg_duration desc
+```
+
+### OpenTelemetry Configuration
+
+All services auto-instrument:
+- **ASP.NET Core**: Request/response tracing
+- **HTTP Clients**: Outbound API calls
+- **Entity Framework Core**: Database queries
+- **Service Bus**: Message send/receive
+
+**View traces in Application Insights:**
+```
+Application Insights → Transaction Search → Select trace
+→ End-to-end transaction view shows entire request chain
+```
+
+### Health Checks
+
+Every service exposes `/health` endpoint for monitoring.
+
+**Check service health:**
+```powershell
+# Local
+curl http://localhost:5037/health
+
+# Azure
+curl https://api-gateway.azurecontainerapps.io/health
+```
+
+**Health check components:**
+- Database connectivity (EF Core)
+- Service Bus connectivity
+- Memory/CPU thresholds (future)
+
+**Container Apps configuration:**
+- **Liveness probe**: `/health` (restart if unhealthy)
+- **Readiness probe**: `/health` (remove from load balancer if unhealthy)
+- **Startup probe**: `/health` (wait for initialization)
+
+---
+
 ## Running Services Locally
 
-### Option 1: Manual Start (Recommended for Development)
+### Automated Setup (Recommended)
+
+Use the **setup-local.ps1** script to automate the entire local environment setup:
+
+```powershell
+.\setup-local.ps1
+```
+
+This script will:
+1. ✅ Validate prerequisites (.NET 8 SDK, Docker, PowerShell 7)
+2. ✅ Start Azurite container (Azure Storage emulator)
+3. ✅ Start SQL Server 2022 container
+4. ✅ Apply EF Core migrations to both databases
+5. ✅ Display connection strings and next steps
+
+**Script parameters:**
+```powershell
+# Skip Docker container startup (if already running)
+.\setup-local.ps1 -SkipDocker
+
+# Skip database migrations
+.\setup-local.ps1 -SkipMigrations
+
+# Skip both
+.\setup-local.ps1 -SkipDocker -SkipMigrations
+```
+
+**After script completes:**
+```powershell
+# Terminal 1 - Start ApiGateway
+cd src/services/ApiGateway
+dotnet run
+
+# Terminal 2 - Start ProspectService
+cd src/services/ProspectService
+dotnet run
+
+# Terminal 3 - Start ProjectionService  
+cd src/services/ProjectionService
+dotnet run
+
+# Terminal 4 - Start React frontend
+cd src/frontend
+npm run dev
+```
+
+### Manual Start (Alternative)
 
 **Terminal 1 - ApiGateway:**
 ```powershell

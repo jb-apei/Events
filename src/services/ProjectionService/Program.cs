@@ -2,8 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using ProjectionService.Data;
 using ProjectionService.EventHandlers;
 using ProjectionService.Services;
+using Shared.Infrastructure.Telemetry;
+using Shared.Infrastructure.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Telemetry (OpenTelemetry + Application Insights)
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+builder.Services.AddTelemetry("ProjectionService", appInsightsConnectionString);
 
 // Add configuration sources
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -48,7 +54,9 @@ builder.Services.AddCors(options =>
 builder.Services.AddHostedService<InboxCleanupService>();
 
 // Add health checks
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"])
+    .AddDbContextCheck<ProjectionDbContext>();
 
 // Add logging
 builder.Logging.ClearProviders();
@@ -77,6 +85,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure middleware
+// Add Correlation ID middleware
+app.UseCorrelationId();
 app.UseCors("EventGridPolicy");
 app.UseRouting();
 app.MapControllers();

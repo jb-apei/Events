@@ -2,8 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using ProspectService.Handlers;
 using ProspectService.Infrastructure;
 using ProspectService.Services;
+using Shared.Infrastructure.Telemetry;
+using Shared.Infrastructure.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Telemetry (OpenTelemetry + Application Insights)
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+builder.Services.AddTelemetry("ProspectService", appInsightsConnectionString);
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -45,8 +51,9 @@ else
     Console.WriteLine("INFO: Service Bus command consumer disabled (development mode)");
 }
 
-// Add health checks
+// Add health checks (includes EF Core DB check + Service Bus check)
 builder.Services.AddHealthChecks()
+    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"])
     .AddDbContextCheck<ProspectDbContext>();
 
 // Add CORS (configure as needed)
@@ -63,6 +70,9 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+// Add Correlation ID middleware
+app.UseCorrelationId();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared.Events\Shared.Events.csproj" />
+    <ProjectReference Include="..\Shared.Infrastructure\Shared.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

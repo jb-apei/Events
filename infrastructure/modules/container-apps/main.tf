@@ -47,6 +47,47 @@ resource "azurerm_container_app" "apps" {
           value = env.value
         }
       }
+
+      # Liveness probe - restart container if unhealthy
+      dynamic "liveness_probe" {
+        for_each = try(each.value.health_check_path, null) != null ? [1] : []
+        content {
+          transport = "HTTP"
+          port      = each.value.port
+          path      = try(each.value.health_check_path, "/health")
+          interval_seconds       = 30
+          timeout                = 5
+          failure_count_threshold = 3
+          initial_delay          = 10
+        }
+      }
+
+      # Readiness probe - remove from load balancer if unhealthy
+      dynamic "readiness_probe" {
+        for_each = try(each.value.health_check_path, null) != null ? [1] : []
+        content {
+          transport = "HTTP"
+          port      = each.value.port
+          path      = try(each.value.health_check_path, "/health")
+          interval_seconds       = 10
+          timeout                = 3
+          failure_count_threshold = 3
+          success_count_threshold = 1
+        }
+      }
+
+      # Startup probe - wait for container initialization
+      dynamic "startup_probe" {
+        for_each = try(each.value.health_check_path, null) != null ? [1] : []
+        content {
+          transport = "HTTP"
+          port      = each.value.port
+          path      = try(each.value.health_check_path, "/health")
+          interval_seconds       = 3
+          timeout                = 3
+          failure_count_threshold = 10
+        }
+      }
     }
 
     min_replicas = each.value.min_replicas

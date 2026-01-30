@@ -3,10 +3,20 @@ using ApiGateway.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Shared.Infrastructure.Telemetry;
+using Shared.Infrastructure.Middleware;
 using WsManager = ApiGateway.WebSockets.WebSocketManager;
 using WsHandler = ApiGateway.WebSockets.WebSocketHandler;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Telemetry (OpenTelemetry + Application Insights)
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+builder.Services.AddTelemetry("ApiGateway", appInsightsConnectionString);
+
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"]);
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -82,6 +92,9 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+// Add Correlation ID middleware (must be early in pipeline)
+app.UseCorrelationId();
+
 // Enable Swagger for all environments (Development, Staging, Production)
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -132,6 +145,9 @@ app.Map("/ws/events", async context =>
     var handler = context.RequestServices.GetRequiredService<WsHandler>();
     await handler.HandleWebSocketAsync(context, userId);
 });
+
+// Health check endpoint
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

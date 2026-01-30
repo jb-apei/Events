@@ -51,7 +51,7 @@ module "service_bus" {
       dead_lettering_on_message_expiration    = true
       max_delivery_count                      = 10
       default_message_ttl                     = "P14D" # 14 days
-      lock_duration                           = "PT1M"  # 1 minute
+      lock_duration                           = "PT1M" # 1 minute
       requires_duplicate_detection            = true
       duplicate_detection_history_time_window = "PT10M" # 10 minutes
     }
@@ -73,8 +73,8 @@ module "event_grid" {
   source  = "Azure/avm-res-eventgrid-domain/azurerm"
   version = "~> 0.1"
 
-  name     = "evgd-${var.project_name}-${var.environment}"
-  location = azurerm_resource_group.main.location
+  name      = "evgd-${var.project_name}-${var.environment}"
+  location  = azurerm_resource_group.main.location
   parent_id = azurerm_resource_group.main.id
 
   input_schema = "CloudEventSchemaV1_0"
@@ -174,11 +174,11 @@ module "application_insights" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
-  application_type                      = "web"
-  workspace_id                          = module.log_analytics.resource_id
-  internet_ingestion_enabled            = true
-  internet_query_enabled                = true
-  local_authentication_disabled         = false
+  application_type              = "web"
+  workspace_id                  = module.log_analytics.resource_id
+  internet_ingestion_enabled    = true
+  internet_query_enabled        = true
+  local_authentication_disabled = false
 
   depends_on = [module.log_analytics]
 
@@ -196,7 +196,7 @@ module "container_registry" {
 
   sku                           = "Standard"
   public_network_access_enabled = true
-  admin_enabled                 = false  # Use managed identity instead
+  admin_enabled                 = false # Use managed identity instead
   zone_redundancy_enabled       = false
 
   tags = var.tags
@@ -279,10 +279,10 @@ module "container_apps_environment" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
-  log_analytics_workspace_customer_id  = module.log_analytics.resource.workspace_id
+  log_analytics_workspace_customer_id        = module.log_analytics.resource.workspace_id
   log_analytics_workspace_primary_shared_key = module.log_analytics.resource.primary_shared_key
 
-  zone_redundancy_enabled = false  # Disable zone redundancy for non-VNET deployments
+  zone_redundancy_enabled = false # Disable zone redundancy for non-VNET deployments
 
   tags = var.tags
 }
@@ -297,7 +297,7 @@ locals {
   api_gateway_url  = "https://${local.api_gateway_fqdn}"
 
   # Add other service FQDNs as needed for inter-service communication
-  prospect_service_fqdn = "ca-${var.project_name}-prospect-service-${var.environment}.${local.container_app_base_domain}"
+  prospect_service_fqdn   = "ca-${var.project_name}-prospect-service-${var.environment}.${local.container_app_base_domain}"
   projection_service_fqdn = "ca-${var.project_name}-projection-service-${var.environment}.${local.container_app_base_domain}"
 }
 
@@ -305,92 +305,96 @@ locals {
 module "container_apps" {
   source = "./modules/container-apps"
 
-  resource_group_name         = azurerm_resource_group.main.name
-  location                    = azurerm_resource_group.main.location
+  resource_group_name          = azurerm_resource_group.main.name
+  location                     = azurerm_resource_group.main.location
   container_app_environment_id = module.container_apps_environment.resource_id
-  project_name                = var.project_name
-  environment                 = var.environment
-  key_vault_id                = module.key_vault.resource_id
-  acr_login_server            = module.container_registry.resource.login_server
+  project_name                 = var.project_name
+  environment                  = var.environment
+  key_vault_id                 = module.key_vault.resource_id
+  acr_login_server             = module.container_registry.resource.login_server
 
   apps = {
     prospect-service = {
-      name     = "prospect-service"
-      image    = "acreventsdevrcwv3i.azurecr.io/prospect-service:latest"
-      port     = 8080
-      cpu      = 0.25
-      memory   = "0.5Gi"
-      min_replicas = 1
-      max_replicas = 3
+      name              = "prospect-service"
+      image             = "acreventsdevrcwv3i.azurecr.io/prospect-service:latest"
+      port              = 8080
+      cpu               = 0.25
+      memory            = "0.5Gi"
+      min_replicas      = 1
+      max_replicas      = 3
+      health_check_path = "/health"
       env_vars = {
-        ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-        ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ConnectionStrings__ProspectDb       = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString        = module.service_bus.resource.default_primary_connection_string
         Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        ApiGateway__Url = local.api_gateway_url
-        ApiGateway__PushEvents = "true"
+        ApiGateway__Url                     = local.api_gateway_url
+        ApiGateway__PushEvents              = "true"
       }
     }
     api-gateway = {
-      name     = "api-gateway"
-      image    = "acreventsdevrcwv3i.azurecr.io/api-gateway:latest"
-      port     = 8080
-      cpu      = 1.0
-      memory   = "2Gi"
-      min_replicas = 2
-      max_replicas = 10
-      ingress_enabled = true
-      external_ingress = true
+      name              = "api-gateway"
+      image             = "acreventsdevrcwv3i.azurecr.io/api-gateway:latest"
+      port              = 8080
+      cpu               = 1.0
+      memory            = "2Gi"
+      min_replicas      = 2
+      max_replicas      = 10
+      ingress_enabled   = true
+      external_ingress  = true
+      health_check_path = "/health"
       env_vars = {
-        ConnectionStrings__ReadModelDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-        ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-        ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ConnectionStrings__ReadModelDb        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ConnectionStrings__ProspectDb         = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString          = module.service_bus.resource.default_primary_connection_string
         ApplicationInsights__ConnectionString = module.application_insights.resource.connection_string
       }
     }
     event-relay = {
-      name     = "event-relay"
-      image    = "acreventsdevrcwv3i.azurecr.io/event-relay:latest"
-      port     = 8080
-      cpu      = 0.25
-      memory   = "0.5Gi"
-      min_replicas = 1
-      max_replicas = 1
+      name              = "event-relay"
+      image             = "acreventsdevrcwv3i.azurecr.io/event-relay:latest"
+      port              = 8080
+      cpu               = 0.25
+      memory            = "0.5Gi"
+      min_replicas      = 1
+      max_replicas      = 1
+      health_check_path = "/health"
       env_vars = {
-        ConnectionStrings__ProspectDb = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-        Azure__EventGrid__ProspectTopicEndpoint = module.event_grid_topics.topic_endpoints["prospect-events"]
-        Azure__EventGrid__ProspectTopicKey = module.event_grid_topics.topic_access_keys["prospect-events"]
-        Azure__EventGrid__StudentTopicEndpoint = module.event_grid_topics.topic_endpoints["student-events"]
-        Azure__EventGrid__StudentTopicKey = module.event_grid_topics.topic_access_keys["student-events"]
+        ConnectionStrings__ProspectDb             = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        Azure__EventGrid__ProspectTopicEndpoint   = module.event_grid_topics.topic_endpoints["prospect-events"]
+        Azure__EventGrid__ProspectTopicKey        = module.event_grid_topics.topic_access_keys["prospect-events"]
+        Azure__EventGrid__StudentTopicEndpoint    = module.event_grid_topics.topic_endpoints["student-events"]
+        Azure__EventGrid__StudentTopicKey         = module.event_grid_topics.topic_access_keys["student-events"]
         Azure__EventGrid__InstructorTopicEndpoint = module.event_grid_topics.topic_endpoints["instructor-events"]
-        Azure__EventGrid__InstructorTopicKey = module.event_grid_topics.topic_access_keys["instructor-events"]
+        Azure__EventGrid__InstructorTopicKey      = module.event_grid_topics.topic_access_keys["instructor-events"]
       }
     }
     projection-service = {
-      name     = "projection-service"
-      image    = "acreventsdevrcwv3i.azurecr.io/projection-service:latest"
-      port     = 8080
-      cpu      = 0.25
-      memory   = "0.5Gi"
-      min_replicas = 1
-      max_replicas = 3
-      ingress_enabled = true
-      external_ingress = true
+      name              = "projection-service"
+      image             = "acreventsdevrcwv3i.azurecr.io/projection-service:latest"
+      port              = 8080
+      cpu               = 0.25
+      memory            = "0.5Gi"
+      min_replicas      = 1
+      max_replicas      = 3
+      ingress_enabled   = true
+      external_ingress  = true
+      health_check_path = "/health"
       env_vars = {
         ConnectionStrings__ProjectionDatabase = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-        ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
-        ApiGateway__Url = local.api_gateway_url
+        ServiceBus__ConnectionString          = module.service_bus.resource.default_primary_connection_string
+        Azure__ServiceBus__ConnectionString   = module.service_bus.resource.default_primary_connection_string
+        ApiGateway__Url                       = local.api_gateway_url
       }
     }
     frontend = {
-      name     = "frontend"
-      image    = "acreventsdevrcwv3i.azurecr.io/frontend:latest"
-      port     = 80
-      cpu      = 0.25
-      memory   = "0.5Gi"
-      min_replicas = 1
-      max_replicas = 3
-      ingress_enabled = true
+      name             = "frontend"
+      image            = "acreventsdevrcwv3i.azurecr.io/frontend:latest"
+      port             = 80
+      cpu              = 0.25
+      memory           = "0.5Gi"
+      min_replicas     = 1
+      max_replicas     = 3
+      ingress_enabled  = true
       external_ingress = true
       env_vars = {
         API_GATEWAY_URL = local.api_gateway_url
@@ -427,7 +431,7 @@ resource "azurerm_eventgrid_event_subscription" "projection_subscriptions" {
 
   retry_policy {
     max_delivery_attempts = 30
-    event_time_to_live    = 1440  # 24 hours
+    event_time_to_live    = 1440 # 24 hours
   }
 
   depends_on = [module.container_apps]
