@@ -36,8 +36,9 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid credentials" });
         }
 
-        // Generate user ID from email (MVP simplification)
-        var userId = Guid.NewGuid().ToString();
+        // Generate consistent user ID from email (MVP simplification)
+        // Use a deterministic GUID based on email so same user gets same ID
+        var userId = GenerateConsistentUserId(request.Email);
         var expiresAt = DateTime.UtcNow.AddHours(24);
 
         var token = _jwtService.GenerateToken(userId, request.Email);
@@ -72,5 +73,18 @@ public class AuthController : ControllerBase
         var email = principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
 
         return Ok(new { valid = true, userId, email });
+    }
+
+    /// <summary>
+    /// Generate a consistent user ID from email address
+    /// </summary>
+    private static string GenerateConsistentUserId(string email)
+    {
+        // Use email hash to generate deterministic GUID
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(email.ToLowerInvariant()));
+        var guidBytes = new byte[16];
+        Array.Copy(hashBytes, guidBytes, 16);
+        return new Guid(guidBytes).ToString();
     }
 }
