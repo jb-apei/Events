@@ -320,10 +320,10 @@ module "container_apps" {
       name     = "api-gateway"
       image    = "acreventsdevrcwv3i.azurecr.io/api-gateway:latest"
       port     = 8080
-      cpu      = 0.5
-      memory   = "1Gi"
-      min_replicas = 1
-      max_replicas = 5
+      cpu      = 1.0
+      memory   = "2Gi"
+      min_replicas = 2
+      max_replicas = 10
       ingress_enabled = true
       external_ingress = true
       env_vars = {

@@ -28,7 +28,16 @@ public class WebSocketHandler
         var connectionId = Guid.NewGuid().ToString();
         var connection = new WebSocketConnection(connectionId, webSocket, userId);
 
-        _manager.AddConnection(connection);
+        if (!_manager.AddConnection(connection))
+        {
+            _logger.LogWarning("Connection rejected for user {UserId} - resource limit reached", userId);
+            await webSocket.CloseAsync(
+                WebSocketCloseStatus.PolicyViolation,
+                "Insufficient resources - connection limit reached",
+                CancellationToken.None);
+            webSocket.Dispose();
+            return;
+        }
 
         // Auto-subscribe to all identity events (Prospects, Students, Instructors)
         var defaultSubscriptions = new[] {

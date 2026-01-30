@@ -72,11 +72,24 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
         console.error('[WebSocket] Error:', error)
       }
 
-      ws.onclose = () => {
-        console.log('[WebSocket] Disconnected')
+      ws.onclose = (event) => {
+        console.log('[WebSocket] Disconnected', event.code, event.reason)
         setStatus('disconnected')
         wsRef.current = null
         onDisconnect?.()
+
+        // Don't reconnect on authentication failures (401-like codes) or policy violations
+        if (event.code === 1008) { // Policy Violation (insufficient resources)
+          console.log('[WebSocket] Connection rejected due to resource limits')
+          shouldConnectRef.current = false
+          return
+        }
+
+        if (event.code === 1011) { // Server error
+          console.log('[WebSocket] Server error, stopping reconnection attempts')
+          shouldConnectRef.current = false
+          return
+        }
 
         // Attempt reconnection with exponential backoff
         if (shouldConnectRef.current && reconnectAttemptsRef.current < maxReconnectAttempts) {
@@ -87,6 +100,8 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
             reconnectAttemptsRef.current++
             connect()
           }, delay)
+        } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+          console.log('[WebSocket] Max reconnection attempts reached')
         }
       }
 

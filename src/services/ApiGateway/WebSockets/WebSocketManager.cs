@@ -26,17 +26,37 @@ public class WebSocketManager
 {
     private readonly ConcurrentDictionary<string, WebSocketConnection> _connections = new();
     private readonly ILogger<WebSocketManager> _logger;
+    private const int MaxConnectionsPerUser = 5;
+    private const int MaxTotalConnections = 1000;
 
     public WebSocketManager(ILogger<WebSocketManager> logger)
     {
         _logger = logger;
     }
 
-    public void AddConnection(WebSocketConnection connection)
+    public bool AddConnection(WebSocketConnection connection)
     {
+        // Check total connection limit
+        if (_connections.Count >= MaxTotalConnections)
+        {
+            _logger.LogWarning("Maximum total connections ({Max}) reached, rejecting connection {ConnectionId}",
+                MaxTotalConnections, connection.ConnectionId);
+            return false;
+        }
+
+        // Check per-user connection limit
+        var userConnections = _connections.Values.Count(c => c.UserId == connection.UserId);
+        if (userConnections >= MaxConnectionsPerUser)
+        {
+            _logger.LogWarning("User {UserId} has reached maximum connections ({Max}), rejecting connection {ConnectionId}",
+                connection.UserId, MaxConnectionsPerUser, connection.ConnectionId);
+            return false;
+        }
+
         _connections[connection.ConnectionId] = connection;
-        _logger.LogInformation("WebSocket connection added: {ConnectionId} for user {UserId}",
-            connection.ConnectionId, connection.UserId);
+        _logger.LogInformation("WebSocket connection added: {ConnectionId} for user {UserId} (total: {Total}, user: {UserCount})",
+            connection.ConnectionId, connection.UserId, _connections.Count, userConnections + 1);
+        return true;
     }
 
     public async Task RemoveConnectionAsync(string connectionId)
