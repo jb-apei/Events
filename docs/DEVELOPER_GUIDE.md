@@ -639,8 +639,12 @@ The project uses xUnit for automated testing with the following structure:
 | Test Project | Purpose | Test Types |
 |-------------|---------|-----------|
 | `Shared.Events.Tests` | Event schema validation | Unit tests for EventEnvelope, event serialization |
-| `ProspectService.Tests` | Command handler logic | Integration tests with InMemory database |
-| `ApiGateway.Tests` | JWT service, WebSocket handlers | Unit + integration tests |
+| `ProspectService.Tests` | Command handler logic | Integration tests with InMemory database (planned) |
+| `StudentService.Tests` | Student event schemas | Unit tests for StudentCreated events |
+| `InstructorService.Tests` | Instructor event schemas | Unit tests for InstructorCreated events |
+| `EventRelay.Tests` | Outbox message serialization | Unit tests for event relay patterns |
+| `ProjectionService.Tests` | Event handler validation | Unit tests for projection event processing |
+| `ApiGateway.Tests` | JWT service, WebSocket handlers | Unit + integration tests (planned) |
 
 **Testing Stack:**
 - **xUnit** - Test framework
@@ -667,6 +671,8 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ### Current Test Coverage
 
+**Test Summary: 41 tests passing** ✅
+
 **Shared.Events.Tests** (22 tests):
 - EventEnvelope structure and metadata validation
 - ProspectCreated event schema and serialization
@@ -674,7 +680,30 @@ dotnet test --collect:"XPlat Code Coverage"
 - DateTime UTC preservation across serialization
 - Nullable field handling
 
-✅ **All 22 tests passing**
+**StudentService.Tests** (5 tests):
+- StudentCreated event type and producer validation
+- StudentCreatedData payload structure
+- EventEnvelope inheritance
+- JSON serialization and deserialization
+
+**InstructorService.Tests** (5 tests):
+- InstructorCreated event type and producer validation
+- InstructorCreatedData payload structure
+- EventEnvelope inheritance
+- JSON serialization and deserialization
+
+**EventRelay.Tests** (4 tests):
+- Outbox message payload serialization
+- Event metadata preservation (correlationId, causationId, subject)
+- Multiple event type handling
+- Event envelope serialization consistency
+
+**ProjectionService.Tests** (5 tests):
+- ProspectCreated event processing validation
+- StudentCreated event processing validation
+- InstructorCreated event processing validation
+- Event deserialization and validation
+- EventEnvelope structure validation for all event types
 
 ### Writing New Tests
 
