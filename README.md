@@ -2,290 +2,239 @@
 
 Event-driven microservices architecture for managing Prospects, Students, and Instructors.
 
-## Project Structure
-
-```
-/
-├── .github/
-│   ├── workflows/                   # CI/CD pipelines
-│   │   └── deploy-azure.yml         # Automated Azure deployment
-│   ├── copilot-instructions.md      # Development guidelines
-│   └── SECRETS_SETUP.md             # GitHub secrets configuration
-├── docs/
-│   ├── Architecture.md              # Detailed architecture documentation
-│   ├── DEPLOYMENT.md                # Deployment guide
-│   ├── api-data-contracts.md        # API contracts and schemas
-│   ├── development-mode-patterns.md # Dev environment setup
-│   ├── service-implementation-checklist.md
-│   ├── services-startup-guide.md    # Service startup reference
-│   ├── swagger-api-documentation.md # API documentation
-│   └── TESTING_REFERENCE.md         # Testing documentation
-├── src/
-│   ├── frontend/                    # React + TypeScript + Vite
-│   │   ├── components/              # React components (ProspectPage, etc.)
-│   │   ├── hooks/                   # Custom hooks (useWebSocket, useProspects)
-│   │   └── api/                     # API client code
-│   ├── services/                    # .NET Core microservices
-│   │   ├── ApiGateway/              # REST API + WebSocket hub + Outbox management
-│   │   ├── ProspectService/         # Write model for Prospect aggregate
-│   │   ├── StudentService/          # Write model for Student aggregate
-│   │   ├── InstructorService/       # Write model for Instructor aggregate
-│   │   ├── EventRelay/              # Outbox → Event Grid publisher
-│   │   ├── ProjectionService/       # Read model projections
-│   │   ├── Shared/                  # Shared domain models
-│   │   ├── Shared.Events/           # Event contracts (ProspectCreated, etc.)
-│   │   └── Shared.Infrastructure/   # Common Azure SDK utilities
-│   └── shared/                      # Cross-platform shared code
-└── infrastructure/                  # Terraform for Azure resources
-    ├── main.tf                      # Main infrastructure definition
-    ├── modules/                     # Custom Terraform modules
-    │   ├── container-apps/          # Container Apps configuration
-    │   └── event-grid-topics/       # Event Grid topics
-    └── README.md                    # Infrastructure documentation
-```
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- .NET 8.0 SDK
-- Node.js 20+ (for frontend)
-- Azure CLI (for deployment)
-- Docker (optional, for local Azure emulation with Azurite)
-- PowerShell 7+ (for deployment scripts)
-- Terraform 1.11+ (for infrastructure)
+- **.NET 8.0 SDK**
+- **Node.js 20+**
+- **PowerShell 7+**
+- **Git**
 
-### Local Development
+### Get Started in 5 Minutes
 
-#### Backend (.NET Services)
+1. **Clone & Configure**
+   ```powershell
+   git clone https://github.com/jb-apei/Events.git
+   cd Events
+   cp .env.example .env  # Edit with your settings
+   ```
 
-Start Azurite for local Azure emulation:
-```bash
-azurite --silent --location c:\azurite --debug c:\azurite\debug.log
+2. **Start Backend Services**
+   ```powershell
+   cd src/services
+   dotnet restore && dotnet build
+   
+   # Start in separate terminals
+   dotnet run --project ApiGateway        # Port 5037
+   dotnet run --project ProspectService   # Port 5110
+   dotnet run --project ProjectionService # Port 5140
+   ```
+
+3. **Start Frontend**
+   ```powershell
+   cd src/frontend
+   npm install
+   npm run dev  # Opens http://localhost:3000
+   ```
+
+4. **Test It**
+   - Open http://localhost:3000
+   - Create a prospect
+   - Watch real-time updates via WebSocket
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** | Complete setup, configuration, patterns, debugging |
+| **[Architecture.md](docs/Architecture.md)** | System design, CQRS, event schemas |
+| **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** | Azure deployment, CI/CD, troubleshooting |
+| **[ACTION_PLAN.md](docs/ACTION_PLAN.md)** | Roadmap for improvements |
+| **[TERRAFORM_BEST_PRACTICES.md](docs/TERRAFORM_BEST_PRACTICES.md)** | Infrastructure patterns |
+
+---
+
+## 🏗️ Architecture Overview
+
+### Tech Stack
+
+**Frontend:** React + TypeScript + React Query + WebSocket  
+**Backend:** .NET 8 microservices  
+**Cloud:** Azure Container Apps + SQL + Service Bus + Event Grid  
+**Patterns:** CQRS, Event-Driven, Transactional Outbox
+
+### Services
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| **ApiGateway** | 5037 | REST API + WebSocket hub |
+| **ProspectService** | 5110 | Prospect write model |
+| **StudentService** | 5120 | Student write model |
+| **InstructorService** | 5130 | Instructor write model |
+| **EventRelay** | N/A | Outbox → Event Grid publisher |
+| **ProjectionService** | 5140 | Read model projections |
+| **Frontend** | 3000 | React UI |
+
+### Event Flow
+
+```
+Frontend → ApiGateway → ProspectService
+                          ↓
+                    Save Entity + Event (Transaction)
+                          ↓
+                    Publish Event → EventRelay → Event Grid
+                          ↓
+                    ApiGateway → WebSocket → Frontend (Real-time Update)
 ```
 
-Then start services:
-```bash
-cd src/services
-dotnet restore
-dotnet build
+---
 
-# Start individual services
-dotnet run --project ApiGateway
-dotnet run --project ProspectService
-dotnet run --project EventRelay
-dotnet run --project ProjectionService
-```
+## 🚢 Deployment
 
-#### Frontend (React)
-
-```bash
-cd src/frontend
-npm install
-npm run dev
-```
-
-Visit http://localhost:5173
-
-### Azure Deployment
-
-#### Quick Deploy (Automated)
+### Automated Deployment (Recommended)
 
 ```powershell
-# Deploy from local source
+# Deploy from GitHub (production)
+.\deploy.ps1 -GitHubRepo "https://github.com/jb-apei/Events.git"
+
+# Or deploy from local source
 .\deploy.ps1
-
-# Deploy from GitHub repository
-.\deploy.ps1 -GitHubRepo "https://github.com/jb-apei/Events.git"
 ```
 
-#### GitHub Actions (CI/CD)
+### GitHub Actions (CI/CD)
 
-Automated deployment on push to `master`:
-1. Builds all container images in Azure Container Registry
+Automatically deploys on push to `master`:
+1. Builds all 7 container images in Azure Container Registry
 2. Applies Terraform infrastructure changes
-3. Restarts all container apps with new images
+3. Restarts Container Apps with new images
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment options.
+**Setup:** See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for GitHub secrets configuration.
 
-## Architecture Overview
+---
 
-- **Commands**: Flow through Azure Service Bus (`identity-commands` queue)
-- **Events**: Published to Azure Event Grid topics (`prospect-events`, `student-events`, `instructor-events`)
-- **Pattern**: Transactional Outbox ensures reliable event publishing
-- **Real-time**: WebSocket hub (`/ws/events`) pushes events to React clients
-- **State Management**: React Query with cache invalidation on WebSocket events
-- **Authentication**: Development mode allows unauthenticated WebSocket connections
-- **Infrastructure**: Azure Container Apps, SQL Database (Basic tier), Service Bus, Event Grid
-- **Observability**: Application Insights with OpenTelemetry
+## 📁 Project Structure
 
-See [docs/Architecture.md](docs/Architecture.md) for comprehensive details.
+```
+/
+├── .github/workflows/        # CI/CD pipelines
+├── docs/                     # Documentation
+│   ├── DEVELOPER_GUIDE.md    # ⭐ Start here for development
+│   ├── Architecture.md       # System design
+│   └── DEPLOYMENT.md         # Azure deployment
+├── src/
+│   ├── frontend/             # React + TypeScript
+│   ├── services/             # .NET microservices
+│   │   ├── ApiGateway/       # API + WebSocket hub
+│   │   ├── ProspectService/  # Write model
+│   │   ├── EventRelay/       # Event publisher
+│   │   ├── ProjectionService/# Read model
+│   │   ├── Shared.Events/    # Event contracts
+│   │   └── Shared.Infrastructure/
+│   └── shared/
+└── infrastructure/           # Terraform IaC
+    ├── main.tf
+    └── modules/
+```
 
-## Services
+---
 
-### ApiGateway
-- REST API endpoints (`/api/prospects`, `/api/students`, `/api/instructors`)
-- WebSocket hub for real-time updates (`/ws/events`)
-- Outbox management API (`/api/outbox`)
-- Event Grid webhook receiver (`/api/events/webhook`)
-- Development mode: Unauthenticated WebSocket access enabled
+## 🧪 Development Workflow
 
-### ProspectService
-- Processes Prospect commands (Create, Update)
-- Implements write model with transactional outbox pattern
-- Publishes ProspectCreated, ProspectUpdated events
+### Creating a New Prospect
 
-### StudentService
-- Processes Student commands (Create, Update, Changed)
-- Implements write model with transactional outbox pattern
-- Publishes StudentCreated, StudentUpdated, StudentChanged events
+```powershell
+# 1. Login (if auth enabled)
+$login = @{ email = "test@test.com"; password = "test123" } | ConvertTo-Json
+$auth = Invoke-RestMethod -Uri "http://localhost:5037/api/auth/login" -Method Post -Body $login -ContentType "application/json"
 
-### InstructorService
-- Processes Instructor commands (Create, Update, Deactivate)
-- Implements write model with transactional outbox pattern
-- Publishes InstructorCreated, InstructorUpdated, InstructorDeactivated events
+# 2. Create prospect
+$prospect = @{ 
+    firstName = "John"
+    lastName = "Doe"
+    email = "john.doe@test.com"
+    phone = "555-1234"
+} | ConvertTo-Json
 
-### EventRelay
-- Background service polling Outbox table
-- Publishes events to Azure Event Grid
-- Marks events as published after successful delivery
+Invoke-RestMethod -Uri "http://localhost:5110/api/prospects" `
+    -Method Post `
+    -Body $prospect `
+    -ContentType "application/json" `
+    -Headers @{ Authorization = "Bearer $($auth.token)" }
+```
 
-### ProjectionService
-- Subscribes to Event Grid topics via webhook
-- Updates read models (ProspectSummary, StudentSummary, InstructorSummary)
-- Implements Inbox pattern for idempotency (7-day dedupe window)
+### Real-Time Event Updates
 
-### Frontend
-- React with TypeScript and Vite
-- Real-time updates via WebSocket connection
-- React Query for state management and caching
-- Displays Prospects, Students, and Instructors
+The UI automatically receives updates via WebSocket when:
+- Prospects are created/updated
+- Students are enrolled
+- Instructors are added
 
-## Development Workflow
+No page refresh needed!
 
-1. **Create a command** in ProspectService/Commands (e.g., CreateProspectCommand.cs)
-2. **Add handler** in Handlers/ that validates, saves to DB + Outbox in single transaction
-3. **Define event schema** in Shared.Events (e.g., ProspectCreated.cs)
-4. **EventRelay publishes** event to Event Grid (automatic background process)
-5. **ApiGateway receives** event via webhook and forwards via WebSocket
-6. **React UI receives** event through WebSocket hook and updates via React Query
-7. **ProjectionService** updates read models (e.g., ProspectSummary table)
+---
 
-## Key Features
+## 🛠️ Key Features
 
-### WebSocket Real-Time Updates
-- WebSocket endpoint: `/ws/events`
-- Connection pooling: Up to 50 connections per user
-- Automatic cleanup: Dead connections removed every 10 seconds
-- Idle timeout: 10 minutes
-- Development mode: No authentication required
+- ✅ **Event-Driven Architecture** - CQRS with Event Sourcing patterns
+- ✅ **Real-Time Updates** - WebSocket subscriptions for instant UI updates
+- ✅ **Transactional Outbox** - Guaranteed event delivery
+- ✅ **Idempotent Handlers** - Safe at-least-once processing
+- ✅ **Azure Native** - Container Apps, SQL, Service Bus, Event Grid
+- ✅ **CI/CD Pipeline** - Automated GitHub Actions deployment
+- ✅ **Infrastructure as Code** - Terraform for reproducible deployments
+- ✅ **Development Mode** - Run locally without Azure dependencies
 
-### Transactional Outbox Pattern
-All domain events are saved to an Outbox table in the same transaction as the domain entity, ensuring:
-- **Atomicity**: Events never lost even if Event Grid is down
-- **Reliability**: EventRelay publishes from Outbox with retries
-- **Consistency**: Events always match database state
+---
 
-### Idempotency
-All event handlers check Inbox table by `eventId` before processing:
-- **Dedupe window**: 7 days
-- **At-least-once delivery**: Event Grid may deliver multiple times
-- **Safe replays**: Re-running events has no side effects
+## 🔧 Configuration
 
-### Azure Container Apps Deployment
-- Auto-scaling based on HTTP requests and CPU
-- Managed identities for Key Vault access
-- ACR integration for pulling images
-- Rolling updates with zero downtime
-- Environment variables from Key Vault secrets
-
-## Configuration
-
-### GitHub Secrets (for CI/CD)
-Required secrets for GitHub Actions workflow:
-- `ARM_CLIENT_ID` - Service principal client ID
-- `ARM_CLIENT_SECRET` - Service principal secret
-- `ARM_SUBSCRIPTION_ID` - Azure subscription ID
-- `ARM_TENANT_ID` - Azure AD tenant ID
-
-Run `setup-github-secrets.ps1` to automate setup.
-
-### Local Development
-Edit `appsettings.Development.json` in each service for local configuration:
-- Connection strings point to local Azurite or Azure SQL
-- Service Bus connection string
-- Event Grid endpoint (optional for local testing)
-
-## Testing
+All configuration documented in [`.env.example`](.env.example):
 
 ```bash
-# Backend unit tests
-cd src/services
-dotnet test
+# Database
+ConnectionStrings__ProspectDb=Server=localhost,1433;...
 
-# E2E tests (requires Azure resources)
-dotnet test --filter Category=E2E
+# Azure Services (optional for local dev)
+ServiceBus__ConnectionString=UseDevelopmentStorage=true
+EventGrid__ProspectTopicEndpoint=https://...
+
+# Development Mode
+ApiGateway__Url=http://localhost:5037
+ApiGateway__PushEvents=true  # Enable local event push
 ```
 
-## Common Tasks
+See [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for complete configuration details.
 
-### View Outbox Messages
-```powershell
-# Query unpublished events
-curl https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/api/outbox?published=false
-```
+---
 
-### Restart All Services
-```powershell
-.\deploy.ps1 -SkipBuild -SkipTerraform
-```
+## 🤝 Contributing
 
-### Rebuild Images from GitHub
-```powershell
-.\deploy.ps1 -GitHubRepo "https://github.com/jb-apei/Events.git"
-```
+1. Check [ACTION_PLAN.md](docs/ACTION_PLAN.md) for planned improvements
+2. Follow patterns in [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
+3. Review [.github/copilot-instructions.md](.github/copilot-instructions.md) for conventions
+4. Create feature branch and submit PR
 
-### View Container App Logs
-```bash
-az containerapp logs show \
-  --name ca-events-api-gateway-dev \
-  --resource-group rg-events-dev \
-  --follow
-```
+---
 
-## Troubleshooting
+## 📖 Learn More
 
-### WebSocket Connection Issues
-- Check that WebSocket endpoint is `wss://` (not `ws://`) in production
-- Verify development mode is enabled for local testing without auth
-- Check browser console for connection errors
-- Verify API Gateway is running and accessible
+- **Getting Started:** [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
+- **System Design:** [Architecture.md](docs/Architecture.md)
+- **Deployment:** [DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **API Contracts:** [api-data-contracts.md](docs/api-data-contracts.md)
+- **Infrastructure:** [TERRAFORM_BEST_PRACTICES.md](docs/TERRAFORM_BEST_PRACTICES.md)
 
-### Events Not Publishing
-- Check Outbox table for unpublished events: `SELECT * FROM Outbox WHERE Published = 0`
-- Verify EventRelay service is running
-- Check Event Grid topic configuration in Azure Portal
-- Review Application Insights logs for errors
+---
 
-### Container App Not Starting
-- Check logs: `az containerapp logs show --name <app-name> --resource-group rg-events-dev`
-- Verify Key Vault access policy includes container app managed identity
-- Check environment variables are correctly set
-- Verify ACR pull permissions
+## 📝 License
 
-## Documentation
+[Your License Here]
 
-- [Architecture.md](docs/Architecture.md) - Complete architecture documentation
-- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guide
-- [api-data-contracts.md](docs/api-data-contracts.md) - API schemas
-- [development-mode-patterns.md](docs/development-mode-patterns.md) - Local dev setup
-- [services-startup-guide.md](docs/services-startup-guide.md) - Service startup reference
-- [TESTING_REFERENCE.md](docs/TESTING_REFERENCE.md) - Testing and API reference
+## 🆘 Support
 
-## Contributing
-
-See [.github/copilot-instructions.md](.github/copilot-instructions.md) for coding conventions and patterns.
-
-## License
-
-MIT
+- Review documentation in `docs/`
+- Check [ACTION_PLAN.md](docs/ACTION_PLAN.md) for known limitations
+- Create an issue for bugs or feature requests
