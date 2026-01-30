@@ -8,6 +8,7 @@ COPY ["src/services/Events.sln", "./"]
 # Copy project files
 COPY ["src/services/ApiGateway/ApiGateway.csproj", "ApiGateway/"]
 COPY ["src/services/Shared.Events/Shared.Events.csproj", "Shared.Events/"]
+COPY ["src/services/Shared.Infrastructure/Shared.Infrastructure.csproj", "Shared.Infrastructure/"]
 
 # Restore dependencies
 RUN dotnet restore "ApiGateway/ApiGateway.csproj"
@@ -15,6 +16,7 @@ RUN dotnet restore "ApiGateway/ApiGateway.csproj"
 # Copy everything else
 COPY ["src/services/ApiGateway/", "ApiGateway/"]
 COPY ["src/services/Shared.Events/", "Shared.Events/"]
+COPY ["src/services/Shared.Infrastructure/", "Shared.Infrastructure/"]
 
 # Build
 WORKDIR "/src/ApiGateway"

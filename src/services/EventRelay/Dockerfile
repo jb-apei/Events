@@ -8,6 +8,7 @@ COPY ["src/services/Events.sln", "./"]
 # Copy project files
 COPY ["src/services/EventRelay/EventRelay.csproj", "EventRelay/"]
 COPY ["src/services/Shared.Events/Shared.Events.csproj", "Shared.Events/"]
+COPY ["src/services/Shared.Infrastructure/Shared.Infrastructure.csproj", "Shared.Infrastructure/"]
 
 # Restore dependencies
 RUN dotnet restore "EventRelay/EventRelay.csproj"
@@ -15,6 +16,7 @@ RUN dotnet restore "EventRelay/EventRelay.csproj"
 # Copy everything else
 COPY ["src/services/EventRelay/", "EventRelay/"]
 COPY ["src/services/Shared.Events/", "Shared.Events/"]
+COPY ["src/services/Shared.Infrastructure/", "Shared.Infrastructure/"]
 
 # Build
 WORKDIR "/src/EventRelay"

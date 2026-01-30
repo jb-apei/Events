@@ -8,6 +8,7 @@ COPY ["src/services/Events.sln", "./"]
 # Copy project files
 COPY ["src/services/ProjectionService/ProjectionService.csproj", "ProjectionService/"]
 COPY ["src/services/Shared.Events/Shared.Events.csproj", "Shared.Events/"]
+COPY ["src/services/Shared.Infrastructure/Shared.Infrastructure.csproj", "Shared.Infrastructure/"]
 
 # Restore dependencies
 RUN dotnet restore "ProjectionService/ProjectionService.csproj"
@@ -15,6 +16,7 @@ RUN dotnet restore "ProjectionService/ProjectionService.csproj"
 # Copy everything else
 COPY ["src/services/ProjectionService/", "ProjectionService/"]
 COPY ["src/services/Shared.Events/", "Shared.Events/"]
+COPY ["src/services/Shared.Infrastructure/", "Shared.Infrastructure/"]
 
 # Build
 WORKDIR "/src/ProjectionService"
