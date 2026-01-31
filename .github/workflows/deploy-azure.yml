@@ -52,25 +52,25 @@ jobs:
         include:
           - name: api-gateway
             context: src/services
-            dockerfile: ApiGateway/Dockerfile
+            dockerfile: src/services/ApiGateway/Dockerfile
           - name: prospect-service
             context: src/services
-            dockerfile: ProspectService/Dockerfile
+            dockerfile: src/services/ProspectService/Dockerfile
           - name: student-service
             context: src/services
-            dockerfile: StudentService/Dockerfile
+            dockerfile: src/services/StudentService/Dockerfile
           - name: instructor-service
             context: src/services
-            dockerfile: InstructorService/Dockerfile
+            dockerfile: src/services/InstructorService/Dockerfile
           - name: event-relay
             context: src/services
-            dockerfile: EventRelay/Dockerfile
+            dockerfile: src/services/EventRelay/Dockerfile
           - name: projection-service
             context: src/services
-            dockerfile: ProjectionService/Dockerfile
+            dockerfile: src/services/ProjectionService/Dockerfile
           - name: frontend
             context: src/frontend
-            dockerfile: Dockerfile
+            dockerfile: src/frontend/Dockerfile
 
     steps:
       - name: Checkout code
@@ -84,7 +84,7 @@ jobs:
       - name: Build and push to ACR
         run: |
           echo "Building ${{ matrix.name }}..."
-          
+
           az acr build \
             --registry ${{ env.ACR_NAME }} \
             --image "${{ matrix.name }}:latest" \
