@@ -42,10 +42,16 @@ jobs:
           files: '**/coverage.cobertura.xml'
           fail_ci_if_error: false
 
+  terraform:
+    name: Apply Terraform
+    runs-on: ubuntu-latest
+    needs: test
+    # ...existing steps...
+
   build:
     name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: test
+    needs: terraform
     strategy:
       fail-fast: false
       matrix:
@@ -92,10 +98,7 @@ jobs:
             -f "${{ matrix.dockerfile }}" \
             ${{ matrix.context }}
 
-  terraform:
-    name: Apply Terraform
-    runs-on: ubuntu-latest
-    needs: build
+  # terraform job moved above, now build depends on terraform
 
     steps:
       - name: Checkout code
