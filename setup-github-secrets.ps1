@@ -133,13 +133,23 @@ while ([string]::IsNullOrWhiteSpace($sqlAdminPasswordPlain)) {
 # Set GitHub secrets
 Write-Host "`n--> Setting GitHub secrets..." -ForegroundColor Yellow
 
+# Create the JSON object for azure/login action (standard format)
+$azureCredentials = @{
+    clientId = $clientId
+    clientSecret = $clientSecret
+    subscriptionId = $subscriptionId
+    tenantId = $tenantId
+    resourceManagerEndpointUrl = "https://management.azure.com/"
+} | ConvertTo-Json -Compress
+
 $secrets = @{
-    "ARM_CLIENT_ID" = $clientId
-    "ARM_CLIENT_SECRET" = $clientSecret
+    "AZURE_CREDENTIALS"   = $azureCredentials
+    "ARM_CLIENT_ID"       = $clientId
+    "ARM_CLIENT_SECRET"   = $clientSecret
     "ARM_SUBSCRIPTION_ID" = $subscriptionId
-    "ARM_TENANT_ID" = $tenantId
-    "SQL_ADMIN_USERNAME" = $sqlAdminUsername
-    "SQL_ADMIN_PASSWORD" = $sqlAdminPasswordPlain
+    "ARM_TENANT_ID"       = $tenantId
+    "SQL_ADMIN_USERNAME"  = $sqlAdminUsername
+    "SQL_ADMIN_PASSWORD"  = $sqlAdminPasswordPlain
 }
 
 foreach ($key in $secrets.Keys) {

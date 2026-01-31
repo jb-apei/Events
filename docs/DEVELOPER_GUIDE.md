@@ -73,10 +73,32 @@ The root directory contains several PowerShell scripts to automate common tasks.
 
 | Script | Purpose | When to Use |
 |--------|---------|-------------|
-| **`setup-github-secrets.ps1`** | **CI/CD Configuration.** <br> Configures GitHub Repository Secrets and grants Service Principal permissions. | • Setting up a new GitHub repo.<br>• Rotating credentials.<br>• Fixing "403 Forbidden" errors in CI/CD (re-runs permissions check). |
-| **`setup-terraform-backend.ps1`** | **Bootstrapping.** <br> Creates the Azure Storage Account used to store Terraform Remote State. | • Once, when initializing the project in a new Azure Subscription.<br>• If the Terraform State resource group is accidentally deleted. |
-| **`deploy.ps1`** | **Manual Deployment.** <br> Orchestrates the full flow: Build Images → Push to ACR → Apply Terraform → Restart Apps. | • Testing deployment logic without committing to `master`.<br>• Manually updating the dev environment. |
+| **`rebuild_everything.ps1`** | **Master Reset Button.** <br> Orchestrates the *entire* sequence: state setup, ACR bootstrap, secrets, and full deployments. Can destroy & rebuild from scratch. | • **Setting up a new environment.**<br>• Fixing a broken environment via "nuclear option" (-Destroy).<br>• Ensuring all configuration drifts are corrected. |
+| **`deploy.ps1`** | **Manual Deployment.** <br> Orchestrates the standard flow: Build Images → Push to ACR → Apply Terraform → Restart Apps. | • Testing deployment logic without committing to `master`.<br>• Manually updating the dev environment during iteration. |
+| **`bootstrap-acr.ps1`** | **Dependency Bootstrapping.** <br> Creates *only* the Azure Container Registry. Essential prerequisite for `deploy.ps1`. | • If `deploy.ps1` fails because ACR doesn't exist.<br>• Automatically run by `rebuild_everything.ps1`. |
+| **`setup-terraform-backend.ps1`** | **State Bootstrapping.** <br> Creates the Azure Storage Account used to store Terraform Remote State. | • Once, when initializing the project in a new Azure Subscription.<br>• Automatically run by `rebuild_everything.ps1`. |
+| **`setup-github-secrets.ps1`** | **CI/CD Configuration.** <br> Configures GitHub Repository Secrets and grants Service Principal permissions. | • Setting up a new GitHub repo.<br>• Rotating credentials.<br>• Automatically run by `rebuild_everything.ps1`. |
 | **`build-and-push-acr.ps1`** | **Image Management.** <br> Builds Docker images locally or via ACR tasks and pushes them to the registry. | • Updating only container images without redeploying infrastructure.<br>• Troubleshooting Docker build errors. |
+
+## Full Environment Rebuild
+
+To bring up the entire cloud environment from scratch (or fix a corrupted state), use the following order of operations. The `rebuild_everything.ps1` script automates this for you.
+
+### Automated Rebuild
+```powershell
+# Standard rebuild (ensures all resources exist and are up to date)
+.\rebuild_everything.ps1
+
+# "Nuclear" rebuild (Destroys EVERYTHING first - DATA LOSS WARNING)
+.\rebuild_everything.ps1 -Destroy
+```
+
+### Manual Run Order (Logic flow)
+If running manually, execute in this specific order:
+1. `.\setup-terraform-backend.ps1` (Ensure state storage exists)
+2. `.\bootstrap-acr.ps1` (Create Registry so images can be pushed)
+3. `.\setup-github-secrets.ps1` (Establish Service Principal & CI/CD auth)
+4. `.\deploy.ps1` (Build images -> Apply full infrastructure schema -> Deploy Apps)
 
 ---
 
