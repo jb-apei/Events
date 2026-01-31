@@ -38,6 +38,8 @@ variable "apps" {
   type = map(object({
     name             = string
     image            = string
+    bootstrap_image  = optional(string)
+    acr_resource_id  = optional(string)
     port             = number
     cpu              = number
     memory           = string

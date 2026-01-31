@@ -25,7 +25,7 @@ resource "azurerm_container_app" "apps" {
   template {
     container {
       name   = each.value.name
-      image  = each.value.image
+      image  = coalesce(try(each.value.bootstrap_image, null), each.value.image)
       cpu    = each.value.cpu
       memory = each.value.memory
 
@@ -112,6 +112,7 @@ resource "azurerm_container_app" "apps" {
   tags = var.tags
 }
 
+
 # Grant Key Vault access to Container Apps managed identities
 resource "azurerm_role_assignment" "container_apps_kv_user" {
   for_each = var.apps
@@ -119,4 +120,15 @@ resource "azurerm_role_assignment" "container_apps_kv_user" {
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_container_app.apps[each.key].identity[0].principal_id
+}
+
+# Output identities for AcrPull assignment
+output "container_app_identities" {
+  value = {
+    for k, app in azurerm_container_app.apps :
+    k => {
+      principal_id = app.identity[0].principal_id
+      acr_resource_id = try(var.apps[k].acr_resource_id, null)
+    }
+  }
 }
