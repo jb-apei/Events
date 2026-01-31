@@ -1,5 +1,6 @@
 using ApiGateway.EventHandlers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System.Text.Json;
 using WsManager = ApiGateway.WebSockets.WebSocketManager;
 
