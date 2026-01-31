@@ -58,6 +58,26 @@ Complete guide for setting up, configuring, and developing the Events project lo
    notepad .env
    ```
 
+## Project Scripts Reference
+
+The root directory contains several PowerShell scripts to automate common tasks.
+
+### Local Development
+
+| Script | Purpose | When to Use |
+|--------|---------|-------------|
+| **`setup-local.ps1`** | **One-click environment start.** <br> Bootstraps local Docker resources (SQL Server, Azurite) and runs EF Core migrations. | • First time verifying the project works.<br>• Daily startup (ensure containers are running).<br>• Resetting local databases. |
+| **`setup-user-secrets.ps1`** | **Secure configuration.** <br> Initializes .NET User Secrets for all microservices using safe development defaults. | • After cloning the repo.<br>• When adding new configuration keys.<br>• Instead of creating `.env` files manually. |
+
+### Infrastructure & Deployment
+
+| Script | Purpose | When to Use |
+|--------|---------|-------------|
+| **`setup-github-secrets.ps1`** | **CI/CD Configuration.** <br> Configures GitHub Repository Secrets and grants Service Principal permissions. | • Setting up a new GitHub repo.<br>• Rotating credentials.<br>• Fixing "403 Forbidden" errors in CI/CD (re-runs permissions check). |
+| **`setup-terraform-backend.ps1`** | **Bootstrapping.** <br> Creates the Azure Storage Account used to store Terraform Remote State. | • Once, when initializing the project in a new Azure Subscription.<br>• If the Terraform State resource group is accidentally deleted. |
+| **`deploy.ps1`** | **Manual Deployment.** <br> Orchestrates the full flow: Build Images → Push to ACR → Apply Terraform → Restart Apps. | • Testing deployment logic without committing to `master`.<br>• Manually updating the dev environment. |
+| **`build-and-push-acr.ps1`** | **Image Management.** <br> Builds Docker images locally or via ACR tasks and pushes them to the registry. | • Updating only container images without redeploying infrastructure.<br>• Troubleshooting Docker build errors. |
+
 ---
 
 ## Configuration
