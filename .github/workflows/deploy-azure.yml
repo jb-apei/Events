@@ -151,11 +151,6 @@ jobs:
           TF_VAR_location: eastus
           TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
-          TF_VAR_project_name: events
-          TF_VAR_environment: dev
-          TF_VAR_location: eastus
-          TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
-          TF_VAR_acr_name: ${{ env.ACR_NAME }}
 
   restart:
     name: Restart Container Apps
