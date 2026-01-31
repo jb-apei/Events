@@ -123,12 +123,3 @@ resource "azurerm_role_assignment" "container_apps_kv_user" {
 }
 
 # Output identities for AcrPull assignment
-output "container_app_identities" {
-  value = {
-    for k, app in azurerm_container_app.apps :
-    k => {
-      principal_id = app.identity[0].principal_id
-      acr_resource_id = try(var.apps[k].acr_resource_id, null)
-    }
-  }
-}
