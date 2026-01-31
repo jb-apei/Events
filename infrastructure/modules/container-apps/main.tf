@@ -1,6 +1,10 @@
 # Custom wrapper for Container Apps with specific configurations
 
 resource "azurerm_container_app" "apps" {
+    timeouts {
+      create = "60m"
+      update = "60m"
+    }
   for_each = var.apps
 
   name                         = "ca-${var.project_name}-${each.value.name}-${var.environment}"
