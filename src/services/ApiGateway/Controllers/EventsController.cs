@@ -130,8 +130,10 @@ public class EventsController : ControllerBase
     [AllowAnonymous]
     public IActionResult WebhookOptions()
     {
-        // Optionally set CORS headers if needed
-        Response.Headers.Add("Allow", "POST, OPTIONS");
+        // Set required CORS headers for Event Grid validation
+        Response.Headers.Add("Access-Control-Allow-Origin", "*");
+        Response.Headers.Add("Access-Control-Allow-Methods", "POST, OPTIONS");
+        Response.Headers.Add("Access-Control-Allow-Headers", "*");
         return Ok();
     }
 
