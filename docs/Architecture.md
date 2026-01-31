@@ -322,6 +322,32 @@ ProjectionService
 - `ARM_SUBSCRIPTION_ID`
 - `ARM_TENANT_ID`
 
+## Secrets & Configuration Workflow
+
+The system uses a strict "Zero Trust" approach where secrets are generated proactively and injected at runtime.
+
+### 1. Build Time (GitHub Actions)
+- **Source**: GitHub Repository Secrets (`SQL_ADMIN_PASSWORD`, `ARM_CLIENT_SECRET`).
+- **Consumer**: Terraform (via `deploy-azure.yml`).
+- **Action**: Terraform receives these initial credentials to provision the Azure infrastructure (SQL Server, Service Bus, etc.).
+
+### 2. Provisioning Time (Terraform)
+- **Action**: Terraform creates resources (e.g., SQL Database, Service Bus Namespace).
+- **Generation**: Terraform constructs connection strings using the resource outputs (e.g., `Server=tcp:sql-server...`).
+- **Storage**: Terraform writes these connection strings directly into **Azure Key Vault** as secrets (e.g., `sql-transactional-connection`).
+- **Mapping**: Terraform configures **Container Apps** with environment variables that reference the Key Vault URIs (e.g., `secretref:sql-transactional-connection`).
+
+### 3. Usage Time (Microservices)
+- **Identity**: Each microservice runs with a **System-Assigned Managed Identity**.
+- **Access**: The Managed Identity is granted `Key Vault Secrets User` permission via Terraform.
+- **Boot**: When the container starts, the Azure platform automatically resolves the Key Vault references and injects the actual values as environment variables.
+- **Result**: No secrets are ever stored in source code, Docker images, or plain text configuration files.
+
+### 4. Local Development
+- **Source**: User Secrets (`secrets.json`) managed by `.NET CLI`.
+- **Setup**: `setup-user-secrets.ps1` script mimics the Key Vault keys locally.
+- **Workflow**: Developers run the script to initialize their local environment with safe default credentials (e.g., for local SQL Docker container).
+
 ### Resource URLs
 
 - **Frontend**: https://ca-events-frontend-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
