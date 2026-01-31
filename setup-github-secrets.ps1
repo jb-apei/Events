@@ -84,6 +84,22 @@ else {
     Write-Host "[OK] Credentials reset" -ForegroundColor Green
 }
 
+# Get SQL Admin credentials
+Write-Host "`n--> Configuring SQL Admin credentials..." -ForegroundColor Yellow
+$sqlAdminUsername = Read-Host "Enter SQL Admin Username (default: sqladmin)"
+if ([string]::IsNullOrWhiteSpace($sqlAdminUsername)) {
+    $sqlAdminUsername = "sqladmin"
+}
+
+$sqlAdminPassword = Read-Host -AsSecureString "Enter SQL Admin Password (must be strong!)"
+$sqlAdminPasswordPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sqlAdminPassword))
+
+while ([string]::IsNullOrWhiteSpace($sqlAdminPasswordPlain)) {
+    Write-Host "Password cannot be empty." -ForegroundColor Red
+    $sqlAdminPassword = Read-Host -AsSecureString "Enter SQL Admin Password"
+    $sqlAdminPasswordPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sqlAdminPassword))
+}
+
 # Set GitHub secrets
 Write-Host "`n--> Setting GitHub secrets..." -ForegroundColor Yellow
 
@@ -92,6 +108,8 @@ $secrets = @{
     "ARM_CLIENT_SECRET" = $clientSecret
     "ARM_SUBSCRIPTION_ID" = $subscriptionId
     "ARM_TENANT_ID" = $tenantId
+    "SQL_ADMIN_USERNAME" = $sqlAdminUsername
+    "SQL_ADMIN_PASSWORD" = $sqlAdminPasswordPlain
 }
 
 foreach ($key in $secrets.Keys) {
@@ -114,6 +132,8 @@ Write-Host "  - ARM_CLIENT_ID: $clientId" -ForegroundColor Gray
 Write-Host "  - ARM_CLIENT_SECRET: ********" -ForegroundColor Gray
 Write-Host "  - ARM_SUBSCRIPTION_ID: $subscriptionId" -ForegroundColor Gray
 Write-Host "  - ARM_TENANT_ID: $tenantId" -ForegroundColor Gray
+Write-Host "  - SQL_ADMIN_USERNAME: $sqlAdminUsername" -ForegroundColor Gray
+Write-Host "  - SQL_ADMIN_PASSWORD: ********" -ForegroundColor Gray
 
 Write-Host "`nYour GitHub Actions workflow is now ready to deploy to Azure!" -ForegroundColor Green
 Write-Host "Push to the master branch to trigger a deployment.`n" -ForegroundColor Cyan
