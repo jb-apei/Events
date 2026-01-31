@@ -125,6 +125,8 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
           TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
 
       - name: Terraform Apply
         working-directory: infrastructure
@@ -136,6 +138,8 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
           TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
 
   restart:
     name: Restart Container Apps
