@@ -123,6 +123,18 @@ public class EventsController : ControllerBase
     }
 
     /// <summary>
+    /// Handles HTTP OPTIONS requests for the webhook endpoint (required for Event Grid validation)
+    /// </summary>
+    [HttpOptions("webhook")]
+    [AllowAnonymous]
+    public IActionResult WebhookOptions()
+    {
+        // Optionally set CORS headers if needed
+        Response.Headers.Add("Allow", "POST, OPTIONS");
+        return Ok();
+    }
+
+    /// <summary>
     /// Health check endpoint
     /// </summary>
     [HttpGet("health")]
