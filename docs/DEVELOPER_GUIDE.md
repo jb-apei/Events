@@ -19,7 +19,7 @@ Complete guide for setting up, configuring, and developing the Events project lo
 ### Prerequisites
 
 **Required:**
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 - Node.js 20+
 - PowerShell 7+
 - Git
@@ -322,7 +322,7 @@ Use the **setup-local.ps1** script to automate the entire local environment setu
 ```
 
 This script will:
-1. ✅ Validate prerequisites (.NET 8 SDK, Docker, PowerShell 7)
+1. ✅ Validate prerequisites (.NET 10 SDK, Docker, PowerShell 7)
 2. ✅ Start Azurite container (Azure Storage emulator)
 3. ✅ Start SQL Server 2022 container
 4. ✅ Apply EF Core migrations to both databases

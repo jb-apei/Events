@@ -1,22 +1,24 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy solution file
-COPY ["src/services/Events.sln", "./"]
+COPY ["Events.sln", "./"]
 
-# Copy project files
-COPY ["src/services/StudentService/StudentService.csproj", "StudentService/"]
-COPY ["src/services/Shared.Events/Shared.Events.csproj", "Shared.Events/"]
-COPY ["src/services/Shared.Infrastructure/Shared.Infrastructure.csproj", "Shared.Infrastructure/"]
+# Copy ONLY project files (no source code) for dependency restore
+COPY ["StudentService/StudentService.csproj", "StudentService/"]
+COPY ["Shared.Events/Shared.Events.csproj", "Shared.Events/"]
+COPY ["Shared.Infrastructure/Shared.Infrastructure.csproj", "Shared.Infrastructure/"]
+COPY ["Shared.Configuration/Shared.Configuration.csproj", "Shared.Configuration/"]
 
-# Restore dependencies
+# Restore dependencies (this layer is cached unless .csproj changes)
 RUN dotnet restore "StudentService/StudentService.csproj"
 
-# Copy everything else
-COPY ["src/services/StudentService/", "StudentService/"]
-COPY ["src/services/Shared.Events/", "Shared.Events/"]
-COPY ["src/services/Shared.Infrastructure/", "Shared.Infrastructure/"]
+# NOW copy all source code (only invalidates cache if source changes, not if dependencies change)
+COPY ["StudentService/", "StudentService/"]
+COPY ["Shared.Events/", "Shared.Events/"]
+COPY ["Shared.Infrastructure/", "Shared.Infrastructure/"]
+COPY ["Shared.Configuration/", "Shared.Configuration/"]
 
 # Build
 WORKDIR "/src/StudentService"
@@ -27,7 +29,7 @@ FROM build AS publish
 RUN dotnet publish "StudentService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081

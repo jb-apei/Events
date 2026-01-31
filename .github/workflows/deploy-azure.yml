@@ -10,7 +10,7 @@ env:
   AZURE_RESOURCE_GROUP: rg-events-dev
   ACR_NAME: acreventsdevrcwv3i
   TERRAFORM_VERSION: 1.14.4
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '10.0.x'
 
 jobs:
   test:
@@ -43,9 +43,34 @@ jobs:
           fail_ci_if_error: false
 
   build:
-    name: Build Container Images
+    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
     needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api-gateway
+            context: src/services
+            dockerfile: ApiGateway/Dockerfile
+          - name: prospect-service
+            context: src/services
+            dockerfile: ProspectService/Dockerfile
+          - name: student-service
+            context: src/services
+            dockerfile: StudentService/Dockerfile
+          - name: instructor-service
+            context: src/services
+            dockerfile: InstructorService/Dockerfile
+          - name: event-relay
+            context: src/services
+            dockerfile: EventRelay/Dockerfile
+          - name: projection-service
+            context: src/services
+            dockerfile: ProjectionService/Dockerfile
+          - name: frontend
+            context: src/frontend
+            dockerfile: Dockerfile
 
     steps:
       - name: Checkout code
@@ -56,29 +81,16 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
 
-      - name: Build and push images to ACR
+      - name: Build and push to ACR
         run: |
-          services=(
-            "api-gateway:.:src/services/ApiGateway/Dockerfile"
-            "prospect-service:.:src/services/ProspectService/Dockerfile"
-            "student-service:.:src/services/StudentService/Dockerfile"
-            "instructor-service:.:src/services/InstructorService/Dockerfile"
-            "event-relay:.:src/services/EventRelay/Dockerfile"
-            "projection-service:.:src/services/ProjectionService/Dockerfile"
-            "frontend:.:src/frontend/Dockerfile"
-          )
-
-          for service in "${services[@]}"; do
-            IFS=':' read -r name context dockerfile <<< "$service"
-            echo "Building $name..."
-
-            az acr build \
-              --registry ${{ env.ACR_NAME }} \
-              --image "${name}:latest" \
-              --image "${name}:${{ github.sha }}" \
-              -f "$dockerfile" \
-              $context
-          done
+          echo "Building ${{ matrix.name }}..."
+          
+          az acr build \
+            --registry ${{ env.ACR_NAME }} \
+            --image "${{ matrix.name }}:latest" \
+            --image "${{ matrix.name }}:${{ github.sha }}" \
+            -f "${{ matrix.dockerfile }}" \
+            ${{ matrix.context }}
 
   terraform:
     name: Apply Terraform

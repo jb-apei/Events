@@ -96,14 +96,16 @@ catch {
 if (-not $SkipBuild) {
     Write-Step "Building container images in Azure ACR..."
 
+    # Define services - using absolute paths to avoid Start-Job working directory issues
+    $rootPath = $PWD.Path
     $services = @(
-        @{ Name = "api-gateway"; Context = "."; Dockerfile = "src/services/ApiGateway/Dockerfile" },
-        @{ Name = "prospect-service"; Context = "."; Dockerfile = "src/services/ProspectService/Dockerfile" },
-        @{ Name = "student-service"; Context = "."; Dockerfile = "src/services/StudentService/Dockerfile" },
-        @{ Name = "instructor-service"; Context = "."; Dockerfile = "src/services/InstructorService/Dockerfile" },
-        @{ Name = "event-relay"; Context = "."; Dockerfile = "src/services/EventRelay/Dockerfile" },
-        @{ Name = "projection-service"; Context = "."; Dockerfile = "src/services/ProjectionService/Dockerfile" },
-        @{ Name = "frontend"; Context = "."; Dockerfile = "src/frontend/Dockerfile" }
+        @{ Name = "api-gateway"; Context = "$rootPath\src\services"; Dockerfile = "ApiGateway/Dockerfile" },
+        @{ Name = "prospect-service"; Context = "$rootPath\src\services"; Dockerfile = "ProspectService/Dockerfile" },
+        @{ Name = "student-service"; Context = "$rootPath\src\services"; Dockerfile = "StudentService/Dockerfile" },
+        @{ Name = "instructor-service"; Context = "$rootPath\src\services"; Dockerfile = "InstructorService/Dockerfile" },
+        @{ Name = "event-relay"; Context = "$rootPath\src\services"; Dockerfile = "EventRelay/Dockerfile" },
+        @{ Name = "projection-service"; Context = "$rootPath\src\services"; Dockerfile = "ProjectionService/Dockerfile" },
+        @{ Name = "frontend"; Context = "$rootPath\src\frontend"; Dockerfile = "Dockerfile" }
     )
 
     $buildJobs = @()
@@ -123,10 +125,13 @@ if (-not $SkipBuild) {
             }
             else {
                 # Build from local context
+                Set-Location $Context
+                $validDockerfile = $DockerfilePath -replace '/','\'
+
                 az acr build --registry $Registry `
                     --image "${ImageName}:latest" `
-                    -f "$Context/$DockerfilePath" `
-                    $Context 2>&1
+                    -f $validDockerfile `
+                    . 2>&1
             }
         } -ArgumentList $RegistryName, $service.Name, $service.Context, $service.Dockerfile, $GitHubRepo, $GitHubBranch
 
