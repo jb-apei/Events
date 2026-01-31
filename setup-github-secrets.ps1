@@ -64,13 +64,17 @@ if ($sp.Count -eq 0) {
 
     # Grant ACR push permission
     Write-Host "--> Granting ACR push permissions..." -ForegroundColor Yellow
-    az role assignment create `
-        --assignee $clientId `
-        --role "AcrPush" `
-        --scope "/subscriptions/$subscriptionId/resourceGroups/rg-events-dev/providers/Microsoft.ContainerRegistry/registries/acreventsdevrcwv3i" `
-        --output none
-
-    Write-Host "[OK] ACR permissions granted" -ForegroundColor Green
+    # Note: This might fail if ACR doesn't exist yet, which is expected on first run.
+    try {
+        az role assignment create `
+            --assignee $clientId `
+            --role "AcrPush" `
+            --scope "/subscriptions/$subscriptionId/resourceGroups/rg-events-dev/providers/Microsoft.ContainerRegistry/registries/acreventsdevrcwv3i" `
+            --output none
+        Write-Host "[OK] ACR permissions granted" -ForegroundColor Green
+    } catch {
+        Write-Host "[WARN] Could not grant ACR permissions (ACR might not exist yet)" -ForegroundColor Yellow
+    }
 }
 else {
     Write-Host "[OK] Service principal already exists" -ForegroundColor Green
@@ -82,6 +86,32 @@ else {
     $clientSecret = $resetOutput.password
 
     Write-Host "[OK] Credentials reset" -ForegroundColor Green
+}
+
+# ---------------------------------------------------------
+# Ensure Repeatable Role Assignments
+# ---------------------------------------------------------
+Write-Host "`n--> Verifying Role Assignments..." -ForegroundColor Yellow
+
+# 1. Contributor on rg-events-dev (Deployment Target)
+$devRg = "rg-events-dev"
+if (az group exists --name $devRg) {
+    Write-Host "Granting Contributor on $devRg..." -ForegroundColor Gray
+    az role assignment create --assignee $clientId --role Contributor --scope "/subscriptions/$subscriptionId/resourceGroups/$devRg" --output none
+} else {
+    Write-Host "[WARN] $devRg does not exist yet. Terraform will create it, but SP needs permissions on Subscription to do so." -ForegroundColor Yellow
+    # Ideally, we grant on Subscription level if RG doesn't exist, but we refrain to keep scope tight.
+    # The initial 'create-for-rbac' usually handles the creation of the RG if scoped there.
+}
+
+# 2. Contributor on rg-events-tfstate (Terraform State)
+$tfStateRg = "rg-events-tfstate"
+if (az group exists --name $tfStateRg) {
+    Write-Host "Granting Contributor on $tfStateRg..." -ForegroundColor Gray
+    az role assignment create --assignee $clientId --role Contributor --scope "/subscriptions/$subscriptionId/resourceGroups/$tfStateRg" --output none
+    Write-Host "[OK] Access to Terraform State verified" -ForegroundColor Green
+} else {
+     Write-Host "[WARN] $tfStateRg does not exist. Please run setup-terraform-backend.ps1 first." -ForegroundColor Red
 }
 
 # Get SQL Admin credentials
