@@ -190,7 +190,7 @@ module "container_registry" {
   source  = "Azure/avm-res-containerregistry-registry/azurerm"
   version = "~> 0.4"
 
-  name                = "acr${var.project_name}${var.environment}${random_string.suffix.result}"
+  name                = coalesce(var.acr_name, "acr${var.project_name}${var.environment}${random_string.suffix.result}")
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
 
@@ -317,7 +317,7 @@ module "container_apps" {
   apps = {
     prospect-service = {
       name              = "prospect-service"
-      image             = "acreventsdevrcwv3i.azurecr.io/prospect-service:latest"
+      image             = "${module.container_registry.resource.login_server}/prospect-service:latest"
       port              = 8080
       cpu               = 0.25
       memory            = "0.5Gi"
@@ -334,7 +334,7 @@ module "container_apps" {
     }
     api-gateway = {
       name              = "api-gateway"
-      image             = "acreventsdevrcwv3i.azurecr.io/api-gateway:latest"
+      image             = "${module.container_registry.resource.login_server}/api-gateway:latest"
       port              = 8080
       cpu               = 1.0
       memory            = "2Gi"
@@ -352,7 +352,7 @@ module "container_apps" {
     }
     event-relay = {
       name              = "event-relay"
-      image             = "acreventsdevrcwv3i.azurecr.io/event-relay:latest"
+      image             = "${module.container_registry.resource.login_server}/event-relay:latest"
       port              = 8080
       cpu               = 0.25
       memory            = "0.5Gi"
@@ -371,7 +371,7 @@ module "container_apps" {
     }
     projection-service = {
       name              = "projection-service"
-      image             = "acreventsdevrcwv3i.azurecr.io/projection-service:latest"
+      image             = "${module.container_registry.resource.login_server}/projection-service:latest"
       port              = 8080
       cpu               = 0.25
       memory            = "0.5Gi"
@@ -389,7 +389,7 @@ module "container_apps" {
     }
     frontend = {
       name             = "frontend"
-      image            = "acreventsdevrcwv3i.azurecr.io/frontend:latest"
+      image            = "${module.container_registry.resource.login_server}/frontend:latest"
       port             = 80
       cpu              = 0.25
       memory           = "0.5Gi"

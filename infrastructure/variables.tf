@@ -31,6 +31,12 @@ variable "location" {
   default     = "eastus"
 }
 
+variable "acr_name" {
+  description = "Name of the existing Azure Container Registry to use (optional)"
+  type        = string
+  default     = null
+}
+
 variable "service_bus_sku" {
   description = "Service Bus SKU (Basic, Standard, Premium)"
   type        = string
