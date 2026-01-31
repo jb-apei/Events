@@ -34,7 +34,7 @@ catch {
 $acrName = "acreventsdevrcwv3i"
 $projectName = "events"
 $environment = "dev"
-$location = "eastus"
+$location = "eastus2"
 
 # Generate a placeholder SQL Password for validation
 # (Terraform requires all variables to be present, even if not used in the targeted module)

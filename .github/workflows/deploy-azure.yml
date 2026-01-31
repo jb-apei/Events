@@ -135,7 +135,7 @@ jobs:
           TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
           TF_VAR_project_name: events
           TF_VAR_environment: dev
-          TF_VAR_location: eastus
+          TF_VAR_location: eastus2
           TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
           TF_LOG: DEBUG
@@ -154,7 +154,7 @@ jobs:
           TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
           TF_VAR_project_name: events
           TF_VAR_environment: dev
-          TF_VAR_location: eastus
+          TF_VAR_location: eastus2
           TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
 

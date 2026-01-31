@@ -28,7 +28,7 @@ variable "environment" {
 variable "location" {
   description = "Azure region for resources"
   type        = string
-  default     = "eastus"
+  default     = "eastus2"
 }
 
 variable "acr_name" {

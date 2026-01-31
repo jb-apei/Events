@@ -1,15 +1,16 @@
 # Events - Identity Management System
 
-Event-driven microservices architecture for managing Prospects, Students, and Instructors.
+Event-driven microservices architecture for managing Prospects, Students, and Instructors. (MVP Focus: Prospects)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **.NET 8.0 SDK**
+- **.NET 10.0 SDK**
 - **Node.js 20+**
 - **PowerShell 7+**
 - **Git**
+- **Azurite** (Required for local Azure Service Bus/Storage emulation)
 
 ### Get Started in 5 Minutes
 
@@ -20,7 +21,13 @@ Event-driven microservices architecture for managing Prospects, Students, and In
    cp .env.example .env  # Edit with your settings
    ```
 
-2. **Start Backend Services**
+2. **Start Infrastructure Emulator**
+   ```powershell
+   # Start Azurite (in a separate terminal)
+   azurite --silent --location c:\azurite --debug c:\azurite\debug.log
+   ```
+
+3. **Start Backend Services**
    ```powershell
    cd src/services
    dotnet restore && dotnet build
@@ -31,14 +38,14 @@ Event-driven microservices architecture for managing Prospects, Students, and In
    dotnet run --project ProjectionService # Port 5140
    ```
 
-3. **Start Frontend**
+4. **Start Frontend**
    ```powershell
    cd src/frontend
    npm install
    npm run dev  # Opens http://localhost:3000
    ```
 
-4. **Test It**
+5. **Test It**
    - Open http://localhost:3000
    - Create a prospect
    - Watch real-time updates via WebSocket
@@ -62,7 +69,7 @@ Event-driven microservices architecture for managing Prospects, Students, and In
 ### Tech Stack
 
 **Frontend:** React + TypeScript + React Query + WebSocket  
-**Backend:** .NET 8 microservices  
+**Backend:** .NET 10 microservices  
 **Cloud:** Azure Container Apps + SQL + Service Bus + Event Grid  
 **Patterns:** CQRS, Event-Driven, Transactional Outbox
 
