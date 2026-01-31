@@ -28,6 +28,11 @@ variable "key_vault_id" {
   type        = string
 }
 
+variable "key_vault_uri" {
+  description = "Key Vault URI"
+  type        = string
+}
+
 variable "apps" {
   description = "Map of container apps to create"
   type = map(object({
@@ -40,6 +45,7 @@ variable "apps" {
     max_replicas     = number
     ingress_enabled  = optional(bool, false)
     external_ingress = optional(bool, false)
+    health_check_path = optional(string)
     env_vars         = optional(map(string), {})
   }))
 }

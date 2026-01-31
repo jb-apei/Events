@@ -311,6 +311,7 @@ module "container_apps" {
   project_name                 = var.project_name
   environment                  = var.environment
   key_vault_id                 = module.key_vault.resource_id
+  key_vault_uri                = module.key_vault.uri
   acr_login_server             = module.container_registry.resource.login_server
 
   apps = {

@@ -36,7 +36,7 @@ resource "azurerm_container_app" "apps" {
 
       env {
         name  = "AZURE_KEY_VAULT_ENDPOINT"
-        value = var.key_vault_id
+        value = var.key_vault_uri
       }
 
       # Add custom environment variables per app
@@ -113,15 +113,10 @@ resource "azurerm_container_app" "apps" {
 }
 
 # Grant Key Vault access to Container Apps managed identities
-resource "azurerm_key_vault_access_policy" "container_apps" {
+resource "azurerm_role_assignment" "container_apps_kv_user" {
   for_each = var.apps
 
-  key_vault_id = var.key_vault_id
-  tenant_id    = azurerm_container_app.apps[each.key].identity[0].tenant_id
-  object_id    = azurerm_container_app.apps[each.key].identity[0].principal_id
-
-  secret_permissions = [
-    "Get",
-    "List"
-  ]
+  scope                = var.key_vault_id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_container_app.apps[each.key].identity[0].principal_id
 }
