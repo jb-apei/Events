@@ -106,10 +106,22 @@ if (az group exists --name $devRg) {
 
 # 2. Contributor on rg-events-tfstate (Terraform State)
 $tfStateRg = "rg-events-tfstate"
+$storageAccountKey = ""
+
 if (az group exists --name $tfStateRg) {
     Write-Host "Granting Contributor on $tfStateRg..." -ForegroundColor Gray
     az role assignment create --assignee $clientId --role Contributor --scope "/subscriptions/$subscriptionId/resourceGroups/$tfStateRg" --output none
     Write-Host "[OK] Access to Terraform State verified" -ForegroundColor Green
+
+    # Fetch Storage Key for GitHub Secret
+    Write-Host "Fetching Storage Account Key..." -ForegroundColor Gray
+    $storageAccountName = az storage account list --resource-group $tfStateRg --query "[?contains(name, 'steventsstate')].name" -o tsv | Select-Object -First 1
+    if ($storageAccountName) {
+        $storageAccountKey = az storage account keys list --resource-group $tfStateRg --account-name $storageAccountName --query '[0].value' -o tsv
+        Write-Host "[OK] Retrieved storage key for $storageAccountName" -ForegroundColor Green
+    } else {
+        Write-Host "[WARN] No storage account found in $tfStateRg" -ForegroundColor Yellow
+    }
 } else {
      Write-Host "[WARN] $tfStateRg does not exist. Please run setup-terraform-backend.ps1 first." -ForegroundColor Red
 }
@@ -148,6 +160,7 @@ $secrets = @{
     "ARM_CLIENT_SECRET"   = $clientSecret
     "ARM_SUBSCRIPTION_ID" = $subscriptionId
     "ARM_TENANT_ID"       = $tenantId
+    "TF_ARM_ACCESS_KEY"   = $storageAccountKey
     "SQL_ADMIN_USERNAME"  = $sqlAdminUsername
     "SQL_ADMIN_PASSWORD"  = $sqlAdminPasswordPlain
 }
@@ -171,6 +184,7 @@ Write-Host "`nThe following secrets have been set:" -ForegroundColor Cyan
 Write-Host "  - ARM_CLIENT_ID: $clientId" -ForegroundColor Gray
 Write-Host "  - ARM_CLIENT_SECRET: ********" -ForegroundColor Gray
 Write-Host "  - ARM_SUBSCRIPTION_ID: $subscriptionId" -ForegroundColor Gray
+Write-Host "  - TF_ARM_ACCESS_KEY: ********" -ForegroundColor Gray
 Write-Host "  - ARM_TENANT_ID: $tenantId" -ForegroundColor Gray
 Write-Host "  - SQL_ADMIN_USERNAME: $sqlAdminUsername" -ForegroundColor Gray
 Write-Host "  - SQL_ADMIN_PASSWORD: ********" -ForegroundColor Gray
