@@ -58,3 +58,5 @@ tfplan
 src/services/*.tar.gz
 *.zip
 *.tgz
+
+docs/INFRASTRUCTURE_SECRETS.md
