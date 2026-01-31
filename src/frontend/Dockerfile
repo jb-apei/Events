@@ -29,7 +29,7 @@ RUN rm -rf ./*
 COPY --from=build /app/dist .
 
 # Copy nginx configuration template
-COPY src/frontend/nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 # Set default API Gateway URL (can be overridden by environment variable)
 ENV API_GATEWAY_URL=http://localhost:5037
