@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "`n==> Setting up Terraform Backend (Remote State)" -ForegroundColor Cyan
 
 # Configuration
-$location = "eastus"
+$location = "eastus2"
 $resourceGroupName = "rg-events-tfstate"
 $containerName = "tfstate"
 # Generate a unique storage account name

@@ -48,6 +48,12 @@ variable "service_bus_sku" {
   }
 }
 
+variable "key_vault_admin_object_ids" {
+  description = "List of object IDs to grant Key Vault Secrets Officer role (e.g. CI/CD service principals)"
+  type        = list(string)
+  default     = []
+}
+
 variable "sql_admin_username" {
   description = "SQL Server administrator username"
   type        = string
@@ -71,5 +77,15 @@ variable "tags" {
   default = {
     Project   = "Events"
     ManagedBy = "Terraform"
+  }
+}
+
+variable "jwt_secret_key" {
+  description = "Secret key for signing JWT tokens"
+  type        = string
+  sensitive   = true
+  validation {
+    condition     = length(var.jwt_secret_key) >= 32
+    error_message = "JWT secret key must be at least 32 characters long."
   }
 }

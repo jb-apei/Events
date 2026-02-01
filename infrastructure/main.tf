@@ -235,11 +235,13 @@ module "key_vault" {
   tags = var.tags
 }
 
-# Grant Terraform service principal access to Key Vault
+# Grant Terraform service principal (and other admins) access to Key Vault
 resource "azurerm_role_assignment" "kv_terraform_admin" {
+  for_each = toset(distinct(concat(var.key_vault_admin_object_ids, [data.azurerm_client_config.current.object_id])))
+
   scope                = module.key_vault.resource_id
   role_definition_name = "Key Vault Secrets Officer"
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = each.value
 }
 
 # Store connection strings in Key Vault
@@ -306,6 +308,8 @@ locals {
 
   # Add other service FQDNs as needed for inter-service communication
   prospect_service_fqdn   = "ca-${var.project_name}-prospect-service-${var.environment}.${local.container_app_base_domain}"
+  student_service_fqdn    = "ca-${var.project_name}-student-service-${var.environment}.${local.container_app_base_domain}"
+  instructor_service_fqdn = "ca-${var.project_name}-instructor-service-${var.environment}.${local.container_app_base_domain}"
   projection_service_fqdn = "ca-${var.project_name}-projection-service-${var.environment}.${local.container_app_base_domain}"
 }
 
@@ -342,6 +346,44 @@ module "container_apps" {
         ApiGateway__PushEvents              = "true"
       }
     }
+    student-service = {
+      name              = "student-service"
+      image             = "${module.container_registry.resource.login_server}/student-service:latest"
+      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      acr_resource_id   = module.container_registry.resource_id
+      port              = 8080
+      cpu               = 0.25
+      memory            = "0.5Gi"
+      min_replicas      = 1
+      max_replicas      = 3
+      health_check_path = "/health"
+      env_vars = {
+        ConnectionStrings__StudentDb        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString        = module.service_bus.resource.default_primary_connection_string
+        Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ApiGateway__Url                     = local.api_gateway_url
+        ApiGateway__PushEvents              = "true"
+      }
+    }
+    instructor-service = {
+      name              = "instructor-service"
+      image             = "${module.container_registry.resource.login_server}/instructor-service:latest"
+      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+      acr_resource_id   = module.container_registry.resource_id
+      port              = 8080
+      cpu               = 0.25
+      memory            = "0.5Gi"
+      min_replicas      = 1
+      max_replicas      = 3
+      health_check_path = "/health"
+      env_vars = {
+        ConnectionStrings__InstructorDb     = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        ServiceBus__ConnectionString        = module.service_bus.resource.default_primary_connection_string
+        Azure__ServiceBus__ConnectionString = module.service_bus.resource.default_primary_connection_string
+        ApiGateway__Url                     = local.api_gateway_url
+        ApiGateway__PushEvents              = "true"
+      }
+    }
     api-gateway = {
       name              = "api-gateway"
       image             = "${module.container_registry.resource.login_server}/api-gateway:latest"
@@ -360,6 +402,7 @@ module "container_apps" {
         ConnectionStrings__ProspectDb         = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
         ServiceBus__ConnectionString          = module.service_bus.resource.default_primary_connection_string
         ApplicationInsights__ConnectionString = module.application_insights.resource.connection_string
+        Jwt__SecretKey                        = var.jwt_secret_key
       }
     }
     event-relay = {
