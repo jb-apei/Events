@@ -1,6 +1,6 @@
 using Azure.Messaging;
-using Azure.Messaging;
 using Azure.Messaging.EventGrid;
+using Azure.Messaging.EventGrid.SystemEvents;
 using ProjectionService.EventHandlers;
 using Shared.Events;
 using Shared.Events.Prospects;
@@ -36,14 +36,28 @@ public class EventDispatcher
     /// Handles subscription validation and routes events to handlers.
     /// </summary>
     public async Task<EventGridValidationResponse?> ProcessEventGridWebhookAsync(
-        string requestBody,
+        BinaryData requestBody,
         CancellationToken cancellationToken = default)
     {
         // Parse CloudEvents (Event Grid uses CloudEvents v1.0 schema)
-        var cloudEvents = CloudEvent.ParseMany(BinaryData.FromString(requestBody));
+        var cloudEvents = CloudEvent.ParseMany(requestBody);
 
         foreach (var cloudEvent in cloudEvents)
         {
+            // Handle Subscription Validation Handshake
+            if (cloudEvent.Type == "Microsoft.EventGrid.SubscriptionValidationEvent")
+            {
+                var eventData = cloudEvent.Data?.ToObjectFromJson<SubscriptionValidationEventData>(new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return new EventGridValidationResponse 
+                { 
+                    ValidationResponse = eventData?.ValidationCode ?? string.Empty 
+                };
+            }
+
             // Route domain events to handlers
             try
             {

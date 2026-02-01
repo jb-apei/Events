@@ -55,7 +55,6 @@ builder.Services.AddHostedService<InboxCleanupService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()
-    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"])
     .AddDbContextCheck<ProjectionDbContext>();
 
 // Add logging

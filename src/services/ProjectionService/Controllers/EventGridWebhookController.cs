@@ -36,11 +36,12 @@ public class EventGridWebhookController : ControllerBase
     {
         try
         {
-            // Read raw request body
-            using var reader = new StreamReader(Request.Body);
-            var requestBody = await reader.ReadToEndAsync(cancellationToken);
+            _logger.LogInformation("Received Event Grid webhook request");
 
-            _logger.LogInformation("Received Event Grid webhook request. Size: {Size} bytes", requestBody.Length);
+            // Efficiently read request body to BinaryData
+            var requestBody = await BinaryData.FromStreamAsync(Request.Body, cancellationToken);
+            
+            _logger.LogInformation("Request size: {Size} bytes", requestBody.ToMemory().Length);
 
             // Process events and handle validation
             var validationResponse = await _eventDispatcher.ProcessEventGridWebhookAsync(
