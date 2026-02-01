@@ -88,7 +88,7 @@ app.MapHealthChecks("/health");
 // Ensure database is created (Run in all environments for MVP)
 using (var scope = app.Services.CreateScope())
 {
-    try 
+    try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<InstructorDbContext>();
         if (dbContext.Database.IsSqlServer())

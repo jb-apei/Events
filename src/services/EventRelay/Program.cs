@@ -15,9 +15,9 @@ builder.Services.AddHealthChecks();
 // Database context for Outbox table
 builder.Services.AddDbContext<OutboxDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("OutboxDb") 
+    var connectionString = builder.Configuration.GetConnectionString("OutboxDb")
                            ?? builder.Configuration.GetConnectionString("ProspectDb");
-    
+
     if (string.IsNullOrEmpty(connectionString))
     {
          // Fallback for local development or if config is missing

@@ -88,14 +88,14 @@ app.MapHealthChecks("/health");
 // Ensure database is created (Run in all environments for MVP)
 using (var scope = app.Services.CreateScope())
 {
-    try 
+    try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<StudentDbContext>();
         // Check if we are using InMemory or SQL
         if (dbContext.Database.IsSqlServer())
         {
              // Use EnsureCreated for simple setup, or Migrate for production
-             // await dbContext.Database.MigrateAsync(); 
+             // await dbContext.Database.MigrateAsync();
              await dbContext.Database.EnsureCreatedAsync();
         }
         else

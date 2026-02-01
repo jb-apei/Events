@@ -42,10 +42,10 @@ public class WebSocketHandler
         // Limit default subscriptions to critical events only
         // Clients should explicitly subscribe to what they need using the "subscribe" message
         var defaultSubscriptions = Array.Empty<string>();
-        
+
         // Only if development environment or legacy mode is enabled
         // _manager.UpdateSubscriptions(connectionId, defaultSubscriptions);
-        
+
         _logger.LogInformation("WebSocket connection {ConnectionId} established for user {UserId}", connectionId, userId);
 
         try
@@ -69,7 +69,7 @@ public class WebSocketHandler
         var lastActivity = DateTime.UtcNow;
 
         using var cts = new CancellationTokenSource();
-        
+
         // Send periodic pings to keep connection alive and detect disconnects
         var pingTask = Task.Run(async () =>
         {
@@ -77,7 +77,7 @@ public class WebSocketHandler
             while (connection.Socket.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(45), cts.Token);
-                
+
                 // Check if connection is idle
                 if (DateTime.UtcNow - lastActivity > idleTimeout)
                 {

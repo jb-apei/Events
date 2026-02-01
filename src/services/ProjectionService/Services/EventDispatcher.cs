@@ -52,9 +52,9 @@ public class EventDispatcher
                     PropertyNameCaseInsensitive = true
                 });
 
-                return new EventGridValidationResponse 
-                { 
-                    ValidationResponse = eventData?.ValidationCode ?? string.Empty 
+                return new EventGridValidationResponse
+                {
+                    ValidationResponse = eventData?.ValidationCode ?? string.Empty
                 };
             }
 

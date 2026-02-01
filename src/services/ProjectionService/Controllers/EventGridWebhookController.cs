@@ -40,7 +40,7 @@ public class EventGridWebhookController : ControllerBase
 
             // Efficiently read request body to BinaryData
             var requestBody = await BinaryData.FromStreamAsync(Request.Body, cancellationToken);
-            
+
             _logger.LogInformation("Request size: {Size} bytes", requestBody.ToMemory().Length);
 
             // Process events and handle validation
