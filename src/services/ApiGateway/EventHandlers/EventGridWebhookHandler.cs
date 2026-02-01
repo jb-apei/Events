@@ -18,11 +18,11 @@ public class EventGridWebhookHandler
     {
         try
         {
-            using var reader = new StreamReader(request.Body);
-            var requestBody = await reader.ReadToEndAsync();
+            // Efficiently read using BinaryData instead of StreamReader string allocation
+            var binaryData = await BinaryData.FromStreamAsync(request.Body);
 
             // Parse Event Grid events
-            var events = EventGridEvent.ParseMany(BinaryData.FromString(requestBody));
+            var events = EventGridEvent.ParseMany(binaryData);
 
             // Validate Event Grid subscription (webhook validation handshake)
             if (events.Length == 1 && events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")

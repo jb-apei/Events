@@ -39,14 +39,14 @@ public class WebSocketHandler
             return;
         }
 
-        // Auto-subscribe to all identity events (Prospects, Students, Instructors)
-        var defaultSubscriptions = new[] {
-            "ProspectCreated", "ProspectUpdated", "ProspectMerged",
-            "StudentCreated", "StudentUpdated", "StudentChanged",
-            "InstructorCreated", "InstructorUpdated", "InstructorDeactivated"
-        };
-        _manager.UpdateSubscriptions(connectionId, defaultSubscriptions);
-        _logger.LogInformation("WebSocket connection {ConnectionId} auto-subscribed to identity events", connectionId);
+        // Limit default subscriptions to critical events only
+        // Clients should explicitly subscribe to what they need using the "subscribe" message
+        var defaultSubscriptions = Array.Empty<string>();
+        
+        // Only if development environment or legacy mode is enabled
+        // _manager.UpdateSubscriptions(connectionId, defaultSubscriptions);
+        
+        _logger.LogInformation("WebSocket connection {ConnectionId} established for user {UserId}", connectionId, userId);
 
         try
         {
@@ -73,9 +73,10 @@ public class WebSocketHandler
         // Send periodic pings to keep connection alive and detect disconnects
         var pingTask = Task.Run(async () =>
         {
+            // Increase ping interval to 45 seconds (TCP timeout is usually 60s) to reduce chatter
             while (connection.Socket.State == WebSocketState.Open && !cts.Token.IsCancellationRequested)
             {
-                await Task.Delay(TimeSpan.FromSeconds(30), cts.Token);
+                await Task.Delay(TimeSpan.FromSeconds(45), cts.Token);
                 
                 // Check if connection is idle
                 if (DateTime.UtcNow - lastActivity > idleTimeout)
