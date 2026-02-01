@@ -87,6 +87,7 @@ jobs:
           TF_VAR_location: eastus2
           TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
+          TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
           TF_LOG: DEBUG
 
       - name: Terraform Apply
@@ -106,6 +107,7 @@ jobs:
           TF_VAR_location: eastus2
           TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
+          TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
 
 
   build:
