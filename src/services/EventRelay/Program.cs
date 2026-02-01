@@ -10,13 +10,20 @@ var appInsightsConnectionString = builder.Configuration["ApplicationInsights:Con
 builder.Services.AddTelemetry("EventRelay", appInsightsConnectionString);
 
 // Add Health Checks
-builder.Services.AddHealthChecks()
-    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"]);
+builder.Services.AddHealthChecks();
 
 // Database context for Outbox table
 builder.Services.AddDbContext<OutboxDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("ProspectDb");
+    var connectionString = builder.Configuration.GetConnectionString("OutboxDb") 
+                           ?? builder.Configuration.GetConnectionString("ProspectDb");
+    
+    if (string.IsNullOrEmpty(connectionString))
+    {
+         // Fallback for local development or if config is missing
+         throw new InvalidOperationException("Connection string 'OutboxDb' or 'ProspectDb' not found in configuration.");
+    }
+
     options.UseSqlServer(connectionString);
 });
 

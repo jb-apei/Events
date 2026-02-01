@@ -33,16 +33,22 @@ public class OutboxRelayService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            bool processedAny = false;
             try
             {
-                await ProcessUnpublishedEventsAsync(stoppingToken);
+                processedAny = await ProcessUnpublishedEventsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing unpublished events");
             }
 
-            await Task.Delay(_pollingInterval, stoppingToken);
+            // If we processed a full batch, run again immediately (throttle slightly to prevent CPU pinning if extremely busy)
+            // Otherwise, wait for the polling interval
+            if (!processedAny)
+            {
+                await Task.Delay(_pollingInterval, stoppingToken);
+            }
         }
 
         _logger.LogInformation("OutboxRelayService stopped");
@@ -50,8 +56,9 @@ public class OutboxRelayService : BackgroundService
 
     /// <summary>
     /// Process a batch of unpublished events from the Outbox table.
+    /// Returns true if a full batch was processed (indicating potentially more work), false otherwise.
     /// </summary>
-    private async Task ProcessUnpublishedEventsAsync(CancellationToken cancellationToken)
+    private async Task<bool> ProcessUnpublishedEventsAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<OutboxDbContext>();
@@ -67,7 +74,7 @@ public class OutboxRelayService : BackgroundService
         if (unpublishedEvents.Count == 0)
         {
             // No events to process
-            return;
+            return false;
         }
 
         _logger.LogInformation("Processing {EventCount} unpublished events", unpublishedEvents.Count);
@@ -142,6 +149,9 @@ public class OutboxRelayService : BackgroundService
             "Batch complete: {SuccessCount} published, {FailureCount} failed",
             successCount,
             failureCount);
+
+        // Return true if we processed a full batch, suggesting there might be more events
+        return unpublishedEvents.Count == _batchSize;
     }
 
     /// <summary>
