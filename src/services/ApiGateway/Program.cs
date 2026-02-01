@@ -99,7 +99,7 @@ app.UseCorrelationId();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for Container Apps
 
 app.UseCors();
 

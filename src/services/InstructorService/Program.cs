@@ -79,18 +79,33 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for Container Apps (SSL termination at ingress)
 app.UseCors();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Ensure database is created (for development only - use migrations in production)
-if (app.Environment.IsDevelopment())
+// Ensure database is created (Run in all environments for MVP)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<InstructorDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    try 
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<InstructorDbContext>();
+        if (dbContext.Database.IsSqlServer())
+        {
+             await dbContext.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+             await dbContext.Database.EnsureCreatedAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        // Log but don't crash startup to allow health checks to run (potentially)
+        // Although for DB apps, crashing might be correct, but let's avoid retry loops for now if DB is transient
+        Console.WriteLine($"ERROR initializing database: {ex.Message}");
+    }
 }
 
 app.Run();

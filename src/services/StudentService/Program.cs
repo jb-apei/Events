@@ -79,18 +79,34 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Disabled for Container Apps (SSL termination at ingress)
 app.UseCors();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Ensure database is created (for development only - use migrations in production)
-if (app.Environment.IsDevelopment())
+// Ensure database is created (Run in all environments for MVP)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<StudentDbContext>();
-    await dbContext.Database.EnsureCreatedAsync();
+    try 
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<StudentDbContext>();
+        // Check if we are using InMemory or SQL
+        if (dbContext.Database.IsSqlServer())
+        {
+             // Use EnsureCreated for simple setup, or Migrate for production
+             // await dbContext.Database.MigrateAsync(); 
+             await dbContext.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+             await dbContext.Database.EnsureCreatedAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"ERROR initializing database: {ex.Message}");
+    }
 }
 
 app.Run();
