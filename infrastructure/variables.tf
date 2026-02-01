@@ -79,13 +79,3 @@ variable "tags" {
     ManagedBy = "Terraform"
   }
 }
-
-variable "jwt_secret_key" {
-  description = "Secret key for signing JWT tokens"
-  type        = string
-  sensitive   = true
-  validation {
-    condition     = length(var.jwt_secret_key) >= 32
-    error_message = "JWT secret key must be at least 32 characters long."
-  }
-}
