@@ -207,6 +207,8 @@ if (-not $SkipRestart) {
     $apps = @(
         "ca-events-api-gateway-dev",
         "ca-events-prospect-service-dev",
+        "ca-events-student-service-dev",
+        "ca-events-instructor-service-dev",
         "ca-events-projection-service-dev",
         "ca-events-event-relay-dev",
         "ca-events-frontend-dev"

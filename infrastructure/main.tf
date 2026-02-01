@@ -330,7 +330,6 @@ module "container_apps" {
     prospect-service = {
       name              = "prospect-service"
       image             = "${module.container_registry.resource.login_server}/prospect-service:latest"
-      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id   = module.container_registry.resource_id
       port              = 8080
       cpu               = 0.25
@@ -349,7 +348,6 @@ module "container_apps" {
     student-service = {
       name              = "student-service"
       image             = "${module.container_registry.resource.login_server}/student-service:latest"
-      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id   = module.container_registry.resource_id
       port              = 8080
       cpu               = 0.25
@@ -368,7 +366,6 @@ module "container_apps" {
     instructor-service = {
       name              = "instructor-service"
       image             = "${module.container_registry.resource.login_server}/instructor-service:latest"
-      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id   = module.container_registry.resource_id
       port              = 8080
       cpu               = 0.25
@@ -387,7 +384,6 @@ module "container_apps" {
     api-gateway = {
       name              = "api-gateway"
       image             = "${module.container_registry.resource.login_server}/api-gateway:latest"
-      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id   = module.container_registry.resource_id
       port              = 8080
       cpu               = 1.0
@@ -408,7 +404,6 @@ module "container_apps" {
     event-relay = {
       name              = "event-relay"
       image             = "${module.container_registry.resource.login_server}/event-relay:latest"
-      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id   = module.container_registry.resource_id
       port              = 8080
       cpu               = 0.25
@@ -429,7 +424,6 @@ module "container_apps" {
     projection-service = {
       name              = "projection-service"
       image             = "${module.container_registry.resource.login_server}/projection-service:latest"
-      bootstrap_image   = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id   = module.container_registry.resource_id
       port              = 8080
       cpu               = 0.25
@@ -449,7 +443,6 @@ module "container_apps" {
     frontend = {
       name             = "frontend"
       image            = "${module.container_registry.resource.login_server}/frontend:latest"
-      bootstrap_image  = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
       acr_resource_id  = module.container_registry.resource_id
       port             = 80
       cpu              = 0.25
