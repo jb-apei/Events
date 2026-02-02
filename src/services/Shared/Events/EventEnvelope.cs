@@ -6,6 +6,7 @@ namespace Shared.Events;
 /// Base event envelope following CloudEvents v1.0 specification with additional tracking fields.
 /// All domain events MUST inherit from this base class to ensure consistent event metadata.
 /// </summary>
+// Deployment Trigger: Force rebuild
 public abstract class EventEnvelope
 {
     /// <summary>
