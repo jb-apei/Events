@@ -28,12 +28,13 @@ RUN rm -rf ./*
 # Copy built assets from build stage
 COPY --from=build /app/dist .
 
-# Copy nginx configuration template
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+# Copy nginx configuration template to a custom location (to avoid default 20-envsubst-on-templates.sh processing)
+COPY nginx.conf /etc/nginx/nginx.conf.template
 
 # Set default API Gateway URL (can be overridden by environment variable)
 ENV API_GATEWAY_URL=http://localhost:5037
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# Manual envsubst execution to strictly replace ONLY ${API_GATEWAY_URL} and preserve $uri, $host, etc.
+CMD ["/bin/sh", "-c", "envsubst '${API_GATEWAY_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
