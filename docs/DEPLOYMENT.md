@@ -76,25 +76,38 @@ See [.github/SECRETS_SETUP.md](.github/SECRETS_SETUP.md) for detailed instructio
 
 #### Workflow Overview
 
-The GitHub Actions workflow (`.github/workflows/deploy-azure.yml`) includes three jobs:
+The CI/CD pipeline has been optimized into two specialized workflows to reduce build times and ensure efficiency.
 
-1. **Build Job**
-   - Builds all 7 container images from GitHub source
-   - Pushes to Azure Container Registry
-   - Uses root context for Docker builds
+**1. Deploy Infrastructure (`deploy-infrastructure.yml`)**
+- **Triggers**: Changes to `infrastructure/**`
+- **Action**: Runs `terraform plan` and `terraform apply`.
+- **Purpose**: Keeps Azure resources (databases, service bus, etc.) in sync.
+- **Speed**: Ignored when only application code changes.
 
-2. **Terraform Job** (runs in parallel with Build)
-   - Applies infrastructure changes
-   - Uses service principal authentication (azure/login@v1)
-   - Outputs resource identifiers
+**2. Deploy Services (`deploy-services.yml`)**
+- **Triggers**: Changes to `src/**`
+- **Action**: Dynamically detects changed services, tests them, builds docker images, and deploys updates.
+- **Features**:
+    - **Path Filtering**: Only builds what changed.
+        - *Frontend change* → Builds only Frontend (~2 mins).
+        - *ProspectService change* → Builds only ProspectService (~3 mins).
+        - *Shared Code change* → Builds ALL services (~10 mins).
+    - **Dynamic Discovery**: Automatically finds any folder in `src/services/` that contains a `Dockerfile`.
+        - Naming Convention: Folder `BillingService` → Image `billing-service` → App `ca-events-billing-service-dev`.
+        - No YAML configuration required for new services.
+    - **Parallel Deployment**: Uses a matrix strategy to deploy all updated services simultaneously.
 
-3. **Restart Job** (runs after Build + Terraform)
-   - Restarts all container apps to pull new images
-   - Ensures zero-downtime rolling updates
+**handling Deletions:**
+- If a service folder is deleted, the pipeline automatically ignores it (no build/deploy).
+- **Important**: You must manually remove the service definition from Terraform (`infrastructure/main.tf`) to delete the Azure resource and stop billing.
 
-**Trigger Workflow Manually:**
+**Trigger Workflows Manually:**
 ```powershell
-gh workflow run deploy-azure.yml --ref master
+# Infrastructure ONLY
+gh workflow run deploy-infrastructure.yml --ref master
+
+# Services ONLY
+gh workflow run deploy-services.yml --ref master
 ```
 
 ## Deployment Options
