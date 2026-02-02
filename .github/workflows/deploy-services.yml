@@ -1,0 +1,204 @@
+name: Deploy Services
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/**'
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: rg-events-dev
+  ACR_NAME: acreventsdevrcwv3i
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  filter:
+    name: Determine Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.diff.outputs.backend_changed }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to retrieve git history for comparisons
+
+      - name: Detect Changes and Generate Matrix
+        id: matrix
+        run: |
+          # 1. IDENTIFY CHANGED FILES
+          # For push: compare against the commit before the push
+          # For manual/dispatch: default to HEAD~1
+          BASE_SHA=${{ github.event.before }}
+          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            BASE_SHA="HEAD~1"
+          fi
+          
+          echo "Comparing HEAD against $BASE_SHA"
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # 2. CHECK KEY PATHS
+          FRONTEND_CHANGED=false
+          SHARED_CHANGED=false
+          if echo "$CHANGED_FILES" | grep -q "^src/frontend/"; then FRONTEND_CHANGED=true; fi
+          if echo "$CHANGED_FILES" | grep -q "^src/services/Shared"; then SHARED_CHANGED=true; fi
+          if echo "$CHANGED_FILES" | grep -q "^src/services/Events.sln"; then SHARED_CHANGED=true; fi
+
+          echo "Frontend Changed: $FRONTEND_CHANGED"
+          echo "Shared Changed: $SHARED_CHANGED"
+
+          # 3. INITIALIZE MATRIX
+          MATRIX="[]"
+          add_entry() {
+            NAME=$1
+            CONTEXT=$2
+            DOCKERFILE=$3
+            APP_NAME=$4
+            ENTRY="{\"name\":\"$NAME\",\"context\":\"$CONTEXT\",\"dockerfile\":\"$DOCKERFILE\",\"app-name\":\"$APP_NAME\"}"
+            MATRIX=$(echo $MATRIX | jq ". + [$ENTRY]")
+            echo "Added $NAME to build list."
+          }
+
+          # 4. ADD FRONTEND IF CHANGED
+          if [[ "$FRONTEND_CHANGED" == "true" ]]; then
+            add_entry "frontend" "src/frontend" "src/frontend/Dockerfile" "ca-events-frontend-dev"
+          fi
+
+          # 5. DYNAMICALLY SCAN SERVICES
+          # Find all directories in src/services that accept a Dockerfile (excluding Tests/Shared)
+          # We check if the folder itself changed OR if Shared changed
+          
+          for dockerfile in src/services/*/Dockerfile; do
+             # Get the directory (e.g., src/services/ProspectService)
+             dir=$(dirname "$dockerfile")
+             # Get the service name (e.g., ProspectService)
+             serviceNamePascal=$(basename "$dir")
+             
+             # Convert PascalCase to kebab-case (e.g., prospect-service)
+             serviceNameKebab=$(echo "$serviceNamePascal" | sed -r 's/([a-z0-9])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')
+             
+             # Convention: Container App Name
+             appName="ca-events-$serviceNameKebab-dev"
+             
+             echo "Checking $serviceNamePascal..."
+
+             # Check if this specific service folder has changes
+             SERVICE_CHANGED=false
+             if echo "$CHANGED_FILES" | grep -q "^$dir/"; then SERVICE_CHANGED=true; fi
+             
+             # Add to build list if: Shared changed OR This Service changed
+             if [[ "$SHARED_CHANGED" == "true" ]] || [[ "$SERVICE_CHANGED" == "true" ]]; then
+                add_entry "$serviceNameKebab" "src/services" "$dockerfile" "$appName"
+             fi
+          done
+
+          echo "matrix={\"include\":$MATRIX}" >> $GITHUB_OUTPUT
+
+      - name: Set Backend Changed Output
+        id: diff
+        run: |
+           # Determine if any backend service was added to the matrix
+           # If the matrix contains anything other than just 'frontend', or if backend files changed
+           # We use a simple check on the changed files list again for the 'test' job condition
+           
+           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+           if echo "$CHANGED_FILES" | grep -q "^src/services/"; then
+             echo "backend_changed=true" >> $GITHUB_OUTPUT
+           else
+             echo "backend_changed=false" >> $GITHUB_OUTPUT
+           fi
+
+
+          # Set output
+          echo "matrix={\"include\":$MATRIX}" >> $GITHUB_OUTPUT
+
+          echo "Generated Matrix:"
+          echo $MATRIX
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: filter
+    if: needs.filter.outputs.backend_changed == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        working-directory: src/services
+        run: dotnet restore Events.sln
+
+      - name: Run tests
+        working-directory: src/services
+        run: dotnet test Events.sln --no-restore --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: success()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: '**/coverage.cobertura.xml'
+          fail_ci_if_error: false
+
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: [filter, test]
+    if: (success() || needs.test.result == 'skipped') && needs.filter.outputs.matrix != '{"include":[]}'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.filter.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build and push to ACR
+        run: |
+          echo "Building ${{ matrix.name }}..."
+
+          az acr build \
+            --registry ${{ env.ACR_NAME }} \
+            --image "${{ matrix.name }}:latest" \
+            --image "${{ matrix.name }}:${{ github.sha }}" \
+            -f "${{ matrix.dockerfile }}" \
+            ${{ matrix.context }}
+
+  deploy:
+    name: Update ${{ matrix.app-name }}
+    runs-on: ubuntu-latest
+    needs: [filter, build]
+    if: needs.filter.outputs.matrix != '{"include":[]}'
+    strategy:
+        fail-fast: false
+        matrix: ${{ fromJson(needs.filter.outputs.matrix) }}
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Update container app
+        run: |
+            echo "Updating ${{ matrix.app-name }} with image ${{ matrix.name }}:${{ github.sha }}..."
+
+            az containerapp update \
+              --name ${{ matrix.app-name }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ${{ env.ACR_NAME }}.azurecr.io/${{ matrix.name }}:${{ github.sha }}
