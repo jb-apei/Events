@@ -1,39 +1,4 @@
-
 #!/usr/bin/env pwsh
-<#
-.SYNOPSIS
-    Complete deployment script for Events project to Azure
-
-.DESCRIPTION
-    This script automates the entire deployment process:
-    1. Builds all container images in Azure ACR
-    2. Applies Terraform infrastructure changes
-    3. Restarts container apps with new images
-    4. Verifies deployment health
-
-.PARAMETER RegistryName
-    Azure Container Registry name (default: acreventsdevrcwv3i)
-
-.PARAMETER ResourceGroup
-    Azure resource group name (default: rg-events-dev)
-
-.PARAMETER SkipBuild
-    Skip building container images
-
-.PARAMETER SkipTerraform
-    Skip Terraform apply
-
-.PARAMETER SkipRestart
-    Skip restarting container apps
-
-.EXAMPLE
-    .\deploy.ps1
-    Full deployment with all steps
-
-.EXAMPLE
-    .\deploy.ps1 -SkipBuild
-    Deploy infrastructure and restart apps without rebuilding images
-#>
 
 param(
     [Parameter(Mandatory=$false)]
@@ -57,6 +22,8 @@ param(
     [Parameter(Mandatory=$false)]
     [string]$GitHubBranch = "master"
 )
+
+Set-Location "$PSScriptRoot/.."
 
 $ErrorActionPreference = "Stop"
 

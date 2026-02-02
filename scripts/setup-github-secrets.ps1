@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+Set-Location "$PSScriptRoot/.."
 <#
 .SYNOPSIS
     Automatically set up GitHub secrets for Azure deployment

@@ -69,6 +69,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Auto-migrate database on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<StudentDbContext>();
+        if (context.Database.IsSqlServer())
+        {
+            context.Database.Migrate();
+            Console.WriteLine("Database migrated successfully.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred migrating the database: {ex.Message}");
+    }
+}
+
 // Configure the HTTP request pipeline
 // Add Correlation ID middleware
 app.UseCorrelationId();
@@ -94,9 +113,8 @@ using (var scope = app.Services.CreateScope())
         // Check if we are using InMemory or SQL
         if (dbContext.Database.IsSqlServer())
         {
-             // Use EnsureCreated for simple setup, or Migrate for production
-             // await dbContext.Database.MigrateAsync();
-             await dbContext.Database.EnsureCreatedAsync();
+             // Use MigrateAsync for production/SQL to apply migrations
+             await dbContext.Database.MigrateAsync();
         }
         else
         {

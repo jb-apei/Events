@@ -69,6 +69,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Auto-migrate database on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<InstructorDbContext>();
+        if (context.Database.IsSqlServer())
+        {
+            context.Database.Migrate();
+            Console.WriteLine("Database migrated successfully.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred migrating the database: {ex.Message}");
+    }
+}
+
 // Configure the HTTP request pipeline
 // Add Correlation ID middleware
 app.UseCorrelationId();
@@ -93,7 +112,8 @@ using (var scope = app.Services.CreateScope())
         var dbContext = scope.ServiceProvider.GetRequiredService<InstructorDbContext>();
         if (dbContext.Database.IsSqlServer())
         {
-             await dbContext.Database.EnsureCreatedAsync();
+             // Use MigrateAsync for production/SQL to apply migrations
+             await dbContext.Database.MigrateAsync();
         }
         else
         {

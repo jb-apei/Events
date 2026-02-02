@@ -20,8 +20,8 @@
 
 ## Domain Model
 
-**Identities Bounded Context** (MVP Focus: Prospects)
-- **Prospect**: Create, Update, Merge
+**Identities Bounded Context** (MVP Focus: Prospects, Students, Instructors, with future expansion planned to Courses, Enrollments, etc.), 
+- **Prospect**: Create, Update, Merge 
 - **Student**: Create, Update, Changed
 - **Instructor**: Create, Update, Deactivate
 

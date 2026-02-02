@@ -69,7 +69,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Register HTTP client for development mode
-builder.Services.AddHttpClient();
+// In Azure Container Apps (internal), we might need to trust internal certs or ignore validation
+builder.Services.AddHttpClient()
+    .ConfigurePrimaryHttpMessageHandler(() => {
+        var handler = new HttpClientHandler();
+        // IGNORE SSL CERTIFICATE ERRORS (Temporary fix for internal communication)
+        handler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+        return handler;
+    });
 
 // Register custom services
 builder.Services.AddSingleton<JwtService>();

@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+Set-Location "$PSScriptRoot/.."
 # Bootstrap ACR for the first deployment or after environment destruction
 # This script creates ONLY the Azure Container Registry using Terraform
 # so that the GitHub Actions "Build" step has a target to push images to.

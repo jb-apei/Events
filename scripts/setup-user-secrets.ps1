@@ -32,6 +32,8 @@ param(
     [switch]$Interactive = $false
 )
 
+Set-Location "$PSScriptRoot/.."
+
 $ErrorActionPreference = "Stop"
 
 Write-Host "========================================" -ForegroundColor Cyan

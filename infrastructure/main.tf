@@ -313,9 +313,10 @@ locals {
   api_gateway_url  = "https://${local.api_gateway_fqdn}"
 
   # Add other service FQDNs as needed for inter-service communication
-  prospect_service_fqdn   = "ca-${var.project_name}-prospect-service-${var.environment}.${local.container_app_base_domain}"
-  student_service_fqdn    = "ca-${var.project_name}-student-service-${var.environment}.${local.container_app_base_domain}"
-  instructor_service_fqdn = "ca-${var.project_name}-instructor-service-${var.environment}.${local.container_app_base_domain}"
+  # Note: Internal services have .internal injected into the FQDN
+  prospect_service_fqdn   = "ca-${var.project_name}-prospect-service-${var.environment}.internal.${local.container_app_base_domain}"
+  student_service_fqdn    = "ca-${var.project_name}-student-service-${var.environment}.internal.${local.container_app_base_domain}"
+  instructor_service_fqdn = "ca-${var.project_name}-instructor-service-${var.environment}.internal.${local.container_app_base_domain}"
   projection_service_fqdn = "ca-${var.project_name}-projection-service-${var.environment}.${local.container_app_base_domain}"
 }
 
@@ -342,6 +343,8 @@ module "container_apps" {
       memory            = "0.5Gi"
       min_replicas      = 1
       max_replicas      = 3
+      ingress_enabled   = true
+      external_ingress  = false
       health_check_path = "/health"
       env_vars = {
         ConnectionStrings__ProspectDb       = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
@@ -360,6 +363,8 @@ module "container_apps" {
       memory            = "0.5Gi"
       min_replicas      = 1
       max_replicas      = 3
+      ingress_enabled   = true
+      external_ingress  = false
       health_check_path = "/health"
       env_vars = {
         ConnectionStrings__StudentDb        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
@@ -378,6 +383,8 @@ module "container_apps" {
       memory            = "0.5Gi"
       min_replicas      = 1
       max_replicas      = 3
+      ingress_enabled   = true
+      external_ingress  = false
       health_check_path = "/health"
       env_vars = {
         ConnectionStrings__InstructorDb     = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
@@ -405,6 +412,9 @@ module "container_apps" {
         ServiceBus__ConnectionString          = module.service_bus.resource.default_primary_connection_string
         ApplicationInsights__ConnectionString = module.application_insights.resource.connection_string
         Jwt__SecretKey                        = random_password.jwt_secret.result
+        StudentService__Url                   = "https://${local.student_service_fqdn}"
+        InstructorService__Url                = "https://${local.instructor_service_fqdn}"
+        ProspectService__Url                  = "https://${local.prospect_service_fqdn}"
       }
     }
     event-relay = {

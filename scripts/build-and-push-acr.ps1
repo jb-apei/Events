@@ -1,5 +1,4 @@
 #!/usr/bin/env pwsh
-# Build and push Docker images to Azure Container Registry using cloud build
 
 param(
     [Parameter(Mandatory=$true)]
@@ -11,6 +10,8 @@ param(
     [Parameter(Mandatory=$false)]
     [switch]$Sequential = $false
 )
+
+Set-Location "$PSScriptRoot/.."
 
 $ErrorActionPreference = "Continue"
 

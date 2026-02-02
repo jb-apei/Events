@@ -27,6 +27,8 @@ param(
     [switch]$SkipMigrations
 )
 
+Set-Location "$PSScriptRoot/.."
+
 $ErrorActionPreference = "Stop"
 
 Write-Host "🚀 Events Project - Local Development Setup" -ForegroundColor Cyan

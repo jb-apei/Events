@@ -213,14 +213,14 @@ ApiGateway__Url=http://localhost:5037
 ApiGateway__PushEvents=true  # Enable local event push
 ```
 
-See [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for complete configuration details.
+See [Developer Guide](docs/development/guide.md) for complete configuration details.
 
 ---
 
 ## 🤝 Contributing
 
-1. Check [ACTION_PLAN.md](docs/ACTION_PLAN.md) for planned improvements
-2. Follow patterns in [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
+1. Check [Action Plan](docs/status/action-plan.md) for planned improvements
+2. Follow patterns in [Developer Guide](docs/development/guide.md)
 3. Review [.github/copilot-instructions.md](.github/copilot-instructions.md) for conventions
 4. Create feature branch and submit PR
 
@@ -228,11 +228,12 @@ See [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for complete configuration det
 
 ## 📖 Learn More
 
-- **Getting Started:** [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)
-- **System Design:** [Architecture.md](docs/Architecture.md)
-- **Deployment:** [DEPLOYMENT.md](docs/DEPLOYMENT.md)
-- **API Contracts:** [api-data-contracts.md](docs/api-data-contracts.md)
-- **Infrastructure:** [TERRAFORM_BEST_PRACTICES.md](docs/TERRAFORM_BEST_PRACTICES.md)
+- **Documentation Home:** [docs/README.md](docs/README.md)
+- **Getting Started:** [Developer Guide](docs/development/guide.md)
+- **System Design:** [Architecture](docs/architecture/overview.md)
+- **Deployment:** [Deployment Guide](docs/ops/deployment.md)
+- **API Contracts:** [Data Contracts](docs/architecture/data-contracts.md)
+- **Infrastructure:** [Terraform Practices](docs/ops/terraform.md)
 
 ---
 
@@ -242,6 +243,6 @@ See [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) for complete configuration det
 
 ## 🆘 Support
 
-- Review documentation in `docs/`
-- Check [ACTION_PLAN.md](docs/ACTION_PLAN.md) for known limitations
+- Review documentation in [`docs/`](docs/README.md)
+- Check [Action Plan](docs/status/action-plan.md) for known limitations
 - Create an issue for bugs or feature requests

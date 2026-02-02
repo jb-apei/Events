@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+Set-Location "$PSScriptRoot/.."
 $ErrorActionPreference = "Stop"
 
 Write-Host "`n==> Setting up Terraform Backend (Remote State)" -ForegroundColor Cyan

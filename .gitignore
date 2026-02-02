@@ -59,4 +59,4 @@ src/services/*.tar.gz
 *.zip
 *.tgz
 
-docs/INFRASTRUCTURE_SECRETS.md
+docs/ops/infrastructure-reference.md
