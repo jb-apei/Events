@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use API Gateway URL to proxy to services
-const API_GATEWAY_URL = (import.meta as any).env?.VITE_API_URL || 'https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/api';
+const API_GATEWAY_URL = (import.meta as any).env?.VITE_API_URL || 'https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api';
 
 export interface OutboxMessage {
   id: number;
