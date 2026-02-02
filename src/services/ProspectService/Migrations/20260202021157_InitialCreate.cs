@@ -11,6 +11,10 @@ namespace ProspectService.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Safeguard: Drop tables if they exist to prevent migration conflicts in dev environment
+            migrationBuilder.Sql("IF OBJECT_ID('dbo.Outbox', 'U') IS NOT NULL DROP TABLE dbo.Outbox");
+            migrationBuilder.Sql("IF OBJECT_ID('dbo.Prospects', 'U') IS NOT NULL DROP TABLE dbo.Prospects");
+
             migrationBuilder.CreateTable(
                 name: "Outbox",
                 columns: table => new
