@@ -45,9 +45,9 @@ $sqlPasswordPlain = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 3
 
 # Initialize Terraform
 Write-Host "`nInitializing Terraform..." -ForegroundColor Cyan
-Push-Location "infrastructure"
+Push-Location "infrastructure/core"
 try {
-    terraform init
+    terraform init -upgrade
 }
 catch {
     Write-Error "Failed to initialize Terraform. Ensure you have access to the remote state storage account."

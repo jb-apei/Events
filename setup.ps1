@@ -41,23 +41,23 @@ while ($true) {
         "8" {
             $userOid = Read-Host "Enter your Azure AD Object ID"
             $kvResourceId = Read-Host "Enter Key Vault Resource ID"
-            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -KeyVaultResourceId $kvResourceId -Command "Assign-KeyVaultRole"
+            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -KeyVaultResourceId $kvResourceId -Command "Assign-KeyVaultRole" -TerraformStateDir "./infrastructure/core" -TerraformTfvarsPath "./infrastructure/core/terraform.tfvars"
             Pause
         }
         "9" {
             $userOid = Read-Host "Enter your Azure AD Object ID"
-            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -Command "Add-Oid-To-Tfvars"
+            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -Command "Add-Oid-To-Tfvars" -TerraformTfvarsPath "./infrastructure/core/terraform.tfvars"
             Pause
         }
         "10" {
             $userOid = Read-Host "Enter your Azure AD Object ID"
             $roleAssignmentId = Read-Host "Enter Role Assignment Resource ID"
-            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -Command "Import-Terraform-RoleAssignment" -RoleAssignmentResourceId $roleAssignmentId
+            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -Command "Import-Terraform-RoleAssignment" -RoleAssignmentResourceId $roleAssignmentId -TerraformStateDir "./infrastructure/core"
             Pause
         }
         "11" {
             $spnOid = Read-Host "Enter SPN Object ID"
-            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -Command "Move-Terraform-State" -SpnOid $spnOid
+            pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -Command "Move-Terraform-State" -SpnOid $spnOid -TerraformStateDir "./infrastructure/core"
             Pause
         }
         "Q" { exit }

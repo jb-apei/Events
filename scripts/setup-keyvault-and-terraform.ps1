@@ -5,8 +5,8 @@
 param(
     [string]$UserObjectId,
     [string]$KeyVaultResourceId,
-    [string]$TerraformStateDir = "../infrastructure",
-    [string]$TerraformTfvarsPath = "../infrastructure/terraform.tfvars"
+    [string]$TerraformStateDir = "../infrastructure/core", # Updated to point to core
+    [string]$TerraformTfvarsPath = "../infrastructure/core/terraform.tfvars"
 )
 
 function Assign-KeyVaultRole {
@@ -18,7 +18,7 @@ function Add-Oid-To-Tfvars {
     Write-Host "Adding user OID to terraform.tfvars..."
     $tfvarsContent = Get-Content $TerraformTfvarsPath -Raw
     if ($tfvarsContent -notmatch $UserObjectId) {
-        $pattern = 'key_vault_admin_object_ids\s*=\s*\[(.*?)\]' 
+        $pattern = 'key_vault_admin_object_ids\s*=\s*\[(.*?)\]'
         if ($tfvarsContent -match $pattern) {
             $newContent = $tfvarsContent -replace $pattern, "key_vault_admin_object_ids = [`$1, \"$UserObjectId\"]"
             Set-Content -Path $TerraformTfvarsPath -Value $newContent

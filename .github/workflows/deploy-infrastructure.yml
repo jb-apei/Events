@@ -35,8 +35,9 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.ARM_CLIENT_ID }}","clientSecret":"${{ secrets.ARM_CLIENT_SECRET }}","subscriptionId":"${{ secrets.ARM_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.ARM_TENANT_ID }}"}'
 
-      - name: Terraform Init
-        working-directory: infrastructure
+      # LAYER 1: CORE INFRASTRUCTURE
+      - name: Terraform Init (Core)
+        working-directory: infrastructure/core
         run: terraform init
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -45,8 +46,8 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           ARM_ACCESS_KEY: ${{ secrets.TF_ARM_ACCESS_KEY }}
 
-      - name: Terraform Plan
-        working-directory: infrastructure
+      - name: Terraform Plan (Core)
+        working-directory: infrastructure/core
         run: terraform plan -out=tfplan
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -65,8 +66,8 @@ jobs:
           TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
           TF_LOG: DEBUG
 
-      - name: Terraform Apply
-        working-directory: infrastructure
+      - name: Terraform Apply (Core)
+        working-directory: infrastructure/core
         run: terraform apply -auto-approve tfplan
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -82,4 +83,51 @@ jobs:
           TF_VAR_location: eastus2
           TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
+          TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
+
+
+      # LAYER 2: APPLICATION RESOURCES
+      - name: Terraform Init (Apps)
+        working-directory: infrastructure/apps
+        run: terraform init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          ARM_ACCESS_KEY: ${{ secrets.TF_ARM_ACCESS_KEY }}
+
+      - name: Terraform Plan (Apps)
+        working-directory: infrastructure/apps
+        run: terraform plan -out=tfplan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
+          TF_VAR_project_name: events
+          TF_VAR_environment: dev
+          TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
+          TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
+          TF_LOG: DEBUG
+
+      - name: Terraform Apply (Apps)
+        working-directory: infrastructure/apps
+        run: terraform apply -auto-approve tfplan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
+          TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id: ${{ secrets.ARM_TENANT_ID }}
+          TF_VAR_project_name: events
+          TF_VAR_environment: dev
+          TF_VAR_tags: '{"project":"events","environment":"dev","managedBy":"terraform"}'
           TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}

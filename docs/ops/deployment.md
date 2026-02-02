@@ -18,16 +18,16 @@ The simplest way to deploy is using the automated deployment script:
 
 ```powershell
 # Deploy from local source
-.\deploy.ps1
+.\scripts\deploy.ps1
 
 # Deploy from GitHub repository (recommended for production)
-.\deploy.ps1 -GitHubRepo "https://github.com/jb-apei/Events.git"
+.\scripts\deploy.ps1 -GitHubRepo "https://github.com/jb-apei/Events.git"
 ```
 
 This will:
 1. ✅ Verify Azure CLI authentication
 2. 🏗️ Build all 7 container images in Azure Container Registry
-3. 📦 Apply Terraform infrastructure changes
+3. 📦 Apply Terraform infrastructure changes (Core + Apps layers)
 4. 🔄 Restart container apps with new images
 5. ✅ Verify deployment status
 
@@ -39,6 +39,11 @@ This will:
 - `event-relay` - Outbox publisher
 - `projection-service` - Read model updates
 - `frontend` - React UI
+
+**Infrastructure Layering:**
+The deployment script automatically handles the split Terraform state:
+1. Deploys `infrastructure/core` (Networking, SQL, Service Bus)
+2. Deploys `infrastructure/apps` (Container Apps)
 
 ### 2. GitHub Actions (CI/CD)
 

@@ -40,5 +40,7 @@ Specifically, we adopt the following patterns:
 
 ## Implementation Details
 
-- **Workflow File**: `.github/workflows/deploy-azure.yml`
-- **Standards Doc**: `docs/CI_CD_STANDARDS.md`
+- **Workflow Files**: 
+  - `.github/workflows/deploy-infrastructure.yml`
+  - `.github/workflows/deploy-services.yml`
+- **Standards Doc**: `docs/ops/ci-cd.md`

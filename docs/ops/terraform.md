@@ -1,10 +1,35 @@
-# Terraform Best Practices - Service URL Management
+# Terraform Best Practices - State Split & Service URLs
 
-## Problem Statement
+## Architecture Change (Feb 2026)
+We have split the monolithic Terraform state into two layers:
+1. **Core**: Fundamental resources (VNet, SQL, Service Bus).
+2. **Apps**: Application resources (Container Apps).
+
+This solves the locking issue where frequently changing apps would lock the entire infrastructure.
+
+## Service URL Management
+
+### Problem Statement
 
 When deploying microservices in Azure Container Apps, services need to communicate with each other. This requires knowing each service's URL/FQDN. The challenge: **How do we reference service URLs in Terraform without creating circular dependencies?**
 
-## The Challenge
+### Solution: Deterministic Naming & Remote State (Current Implemented Approach)
+
+With the **Apps** layer knowing the Container Apps Environment ID (from **Core** output), we can deterministically predict the FQDNs.
+
+```hcl
+locals {
+  # Base domain from Core layer output
+  container_app_base_domain = module.container_apps_environment.default_domain
+
+  # Construct FQDNs
+  api_gateway_fqdn = "ca-${var.project_name}-api-gateway-${var.environment}.${local.container_app_base_domain}"
+}
+```
+
+This allows us to pass `api_gateway_url` as an environment variable to `prospect-service` without valid depending on the `api-gateway` resource being created first, breaking the cycle.
+
+## The Challenge (Historic Context)
 
 ```hcl
 # ❌ PROBLEM: Circular Dependency

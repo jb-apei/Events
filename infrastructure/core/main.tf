@@ -1,0 +1,302 @@
+terraform {
+  required_version = ">= 1.11"
+
+  backend "azurerm" {
+    resource_group_name  = "rg-events-tfstate"
+    storage_account_name = "steventsstate8712"
+    container_name       = "tfstate"
+    key = "core.tfstate"
+  }
+
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.58"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  subscription_id = var.subscription_id
+}
+
+# Random suffix for globally unique resource names
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
+# Generate JWT Secret Key automatically
+resource "random_password" "jwt_secret" {
+  length  = 32
+  special = true
+}
+
+# Resource Group
+resource "azurerm_resource_group" "main" {
+  name     = "rg-${var.project_name}-${var.environment}"
+  location = var.location
+  tags     = var.tags
+}
+
+# Azure Verified Module: Service Bus Namespace
+module "service_bus" {
+  source  = "Azure/avm-res-servicebus-namespace/azurerm"
+  version = "~> 0.3"
+
+  name                = "sb-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = var.service_bus_sku
+
+  queues = {
+    identity-commands = {
+      name                                    = "identity-commands"
+      dead_lettering_on_message_expiration    = true
+      max_delivery_count                      = 10
+      default_message_ttl                     = "P14D" # 14 days
+      lock_duration                           = "PT1M" # 1 minute
+      requires_duplicate_detection            = true
+      duplicate_detection_history_time_window = "PT10M" # 10 minutes
+    }
+  }
+
+  topics = {
+    prospect-dlq = {
+      name                         = "prospect-dlq"
+      default_message_ttl          = "P14D"
+      requires_duplicate_detection = true
+    }
+  }
+
+  tags = var.tags
+}
+
+# Azure Verified Module: Event Grid Domain
+module "event_grid" {
+  source  = "Azure/avm-res-eventgrid-domain/azurerm"
+  version = "~> 0.1"
+
+  name      = "evgd-${var.project_name}-${var.environment}"
+  location  = azurerm_resource_group.main.location
+  parent_id = azurerm_resource_group.main.id
+
+  input_schema = "CloudEventSchemaV1_0"
+
+  tags = var.tags
+}
+
+# Event Grid Topics (using custom module as AVM doesn't have dedicated topic module)
+# Note: Path is relative to where terraform is run.
+module "event_grid_topics" {
+  source = "../modules/event-grid-topics"
+
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  project_name        = var.project_name
+  environment         = var.environment
+
+  topics = [
+    "prospect-events",
+    "student-events",
+    "instructor-events"
+  ]
+
+  tags = var.tags
+}
+
+# Azure Verified Module: SQL Server
+module "sql_server" {
+  source  = "Azure/avm-res-sql-server/azurerm"
+  version = "~> 0.1"
+
+  name                = "sql-${var.project_name}-${var.environment}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+
+  administrator_login          = var.sql_admin_username
+  administrator_login_password = var.sql_admin_password
+  server_version               = "12.0"
+
+  public_network_access_enabled = var.environment == "dev" ? true : false
+
+  # Allow Azure services to access
+  firewall_rules = var.environment == "dev" ? {
+    AllowAzureServices = {
+      start_ip_address = "0.0.0.0"
+      end_ip_address   = "0.0.0.0"
+    }
+  } : {}
+
+  tags = var.tags
+}
+
+# Transactional Database
+resource "azurerm_mssql_database" "transactional" {
+  name           = "db-${var.project_name}-transactional-${var.environment}"
+  server_id      = module.sql_server.resource_id
+  collation      = "SQL_Latin1_General_CP1_CI_AS"
+  sku_name       = "Basic" # Free tier equivalent
+  max_size_gb    = 2
+  zone_redundant = false
+
+  tags = var.tags
+}
+
+# Read Model Database
+resource "azurerm_mssql_database" "readmodel" {
+  name           = "db-${var.project_name}-readmodel-${var.environment}"
+  server_id      = module.sql_server.resource_id
+  collation      = "SQL_Latin1_General_CP1_CI_AS"
+  sku_name       = "Basic"
+  max_size_gb    = 2
+  zone_redundant = false
+
+  tags = var.tags
+}
+
+# Azure Verified Module: Log Analytics Workspace
+module "log_analytics" {
+  source  = "Azure/avm-res-operationalinsights-workspace/azurerm"
+  version = "~> 0.4"
+
+  name                = "log-${var.project_name}-${var.environment}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+
+  log_analytics_workspace_retention_in_days = 30
+  log_analytics_workspace_sku               = "PerGB2018"
+
+  tags = var.tags
+}
+
+# Azure Verified Module: Application Insights
+module "application_insights" {
+  source  = "Azure/avm-res-insights-component/azurerm"
+  version = "~> 0.1"
+
+  name                = "appi-${var.project_name}-${var.environment}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+
+  application_type              = "web"
+  workspace_id                  = module.log_analytics.resource_id
+  internet_ingestion_enabled    = true
+  internet_query_enabled        = true
+  local_authentication_disabled = false
+
+  depends_on = [module.log_analytics]
+
+  tags = var.tags
+}
+
+# Azure Verified Module: Container Registry
+module "container_registry" {
+  source  = "Azure/avm-res-containerregistry-registry/azurerm"
+  version = "~> 0.4"
+
+  name                = coalesce(var.acr_name, "acr${var.project_name}${var.environment}${random_string.suffix.result}")
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+
+  sku                           = "Standard"
+  public_network_access_enabled = true
+  admin_enabled                 = false # Use managed identity instead
+  zone_redundancy_enabled       = false
+
+  tags = var.tags
+}
+
+# Current client for Key Vault RBAC
+data "azurerm_client_config" "current" {}
+
+# Azure Verified Module: Key Vault
+module "key_vault" {
+  source  = "Azure/avm-res-keyvault-vault/azurerm"
+  version = "~> 0.9"
+
+  name                = "kv-${var.project_name}-${var.environment}-${random_string.suffix.result}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  tenant_id           = var.tenant_id
+
+  sku_name                   = "standard"
+  purge_protection_enabled   = false
+  soft_delete_retention_days = 7
+
+  network_acls = {
+    default_action = var.environment == "dev" ? "Allow" : "Deny"
+    bypass         = "AzureServices"
+  }
+
+  tags = var.tags
+}
+
+# Grant Terraform service principal (and other admins) access to Key Vault
+resource "azurerm_role_assignment" "kv_terraform_admin" {
+  for_each = toset(distinct(concat(var.key_vault_admin_object_ids, [data.azurerm_client_config.current.object_id])))
+
+  scope                = module.key_vault.resource_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = each.value
+}
+
+# Store connection strings in Key Vault
+resource "azurerm_key_vault_secret" "sql_transactional_connection" {
+  name         = "sql-transactional-connection"
+  value        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.transactional.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
+}
+
+resource "azurerm_key_vault_secret" "sql_readmodel_connection" {
+  name         = "sql-readmodel-connection"
+  value        = "Server=tcp:${module.sql_server.resource.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.readmodel.name};Persist Security Info=False;User ID=${var.sql_admin_username};Password=${var.sql_admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
+}
+
+resource "azurerm_key_vault_secret" "service_bus_connection" {
+  name         = "service-bus-connection"
+  value        = module.service_bus.resource.default_primary_connection_string
+  key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
+}
+
+resource "azurerm_key_vault_secret" "app_insights_connection" {
+  name         = "app-insights-connection"
+  value        = module.application_insights.resource.connection_string
+  key_vault_id = module.key_vault.resource_id
+
+  depends_on = [azurerm_role_assignment.kv_terraform_admin]
+}
+
+# Azure Verified Module: Container Apps Environment
+module "container_apps_environment" {
+  source  = "Azure/avm-res-app-managedenvironment/azurerm"
+  version = "~> 0.2"
+
+  name                = "cae-${var.project_name}-${var.environment}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+
+  log_analytics_workspace_customer_id        = module.log_analytics.resource.workspace_id
+  log_analytics_workspace_primary_shared_key = module.log_analytics.resource.primary_shared_key
+
+  zone_redundancy_enabled = false
+
+  tags = var.tags
+}

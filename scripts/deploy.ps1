@@ -135,32 +135,47 @@ else {
 if (-not $SkipTerraform) {
     Write-Step "Applying Terraform infrastructure changes..."
 
-    Push-Location infrastructure
-
     try {
-        Write-Info "Running terraform plan..."
+        # 1. CORE Infrastructure
+        Write-Step "Deploying Core Infrastructure..."
+        Push-Location infrastructure/core
+
+        Write-Info "Initializing Core..."
+        terraform init -upgrade
+
+        Write-Info "Planning Core..."
         terraform plan -out=tfplan
+        if ($LASTEXITCODE -ne 0) { throw "Terraform plan failed (Core)" }
 
-        if ($LASTEXITCODE -ne 0) {
-            throw "Terraform plan failed"
-        }
-
-        Write-Info "Applying changes..."
+        Write-Info "Applying Core..."
         terraform apply tfplan
+        if ($LASTEXITCODE -ne 0) { throw "Terraform apply failed (Core)" }
 
-        if ($LASTEXITCODE -ne 0) {
-            throw "Terraform apply failed"
-        }
+        Pop-Location
+
+        # 2. APPS Infrastructure
+        Write-Step "Deploying Apps Infrastructure..."
+        Push-Location infrastructure/apps
+
+        Write-Info "Initializing Apps..."
+        terraform init -upgrade
+
+        Write-Info "Planning Apps..."
+        terraform plan -out=tfplan
+        if ($LASTEXITCODE -ne 0) { throw "Terraform plan failed (Apps)" }
+
+        Write-Info "Applying Apps..."
+        terraform apply tfplan
+        if ($LASTEXITCODE -ne 0) { throw "Terraform apply failed (Apps)" }
+
+        Pop-Location
 
         Write-Success "Infrastructure updated successfully"
     }
     catch {
         Write-ErrorMsg "Terraform failed: $_"
-        Pop-Location
+        Pop-Location # Ensure we pop back even on error
         exit 1
-    }
-    finally {
-        Pop-Location
     }
 }
 else {
@@ -232,7 +247,9 @@ foreach ($app in $status) {
 # Get URLs
 Write-Step "Deployment URLs..."
 
-$outputs = terraform output -json -state="infrastructure/terraform.tfstate" | ConvertFrom-Json
+Push-Location infrastructure/apps
+$outputs = terraform output -json | ConvertFrom-Json
+Pop-Location
 
 Write-Host ""
 Write-Host "  Frontend:    $($outputs.frontend_url.value)" -ForegroundColor Green

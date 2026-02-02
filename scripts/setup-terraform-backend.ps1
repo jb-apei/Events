@@ -55,14 +55,28 @@ Write-Host "[OK] Container created" -ForegroundColor Green
 
 # 4. Output configuration for main.tf
 Write-Host "`n==> SETUP COMPLETE!" -ForegroundColor Cyan
-Write-Host "`nPlease update your infrastructure/main.tf with the following block:" -ForegroundColor Yellow
+Write-Host "`nPlease update your Terraform backend configurations as follows:" -ForegroundColor Yellow
+
+Write-Host "`nFor infrastructure/core/main.tf:" -ForegroundColor Cyan
 Write-Host "--------------------------------------------------------" -ForegroundColor Gray
 Write-Host "terraform {"
 Write-Host "  backend ""azurerm"" {"
 Write-Host "    resource_group_name  = ""$resourceGroupName"""
 Write-Host "    storage_account_name = ""$currentStorageName"""
 Write-Host "    container_name       = ""$containerName"""
-Write-Host "    key                  = ""terraform.tfstate"""
+Write-Host "    key                  = ""core.tfstate"""
+Write-Host "  }"
+Write-Host "}"
+Write-Host "--------------------------------------------------------" -ForegroundColor Gray
+
+Write-Host "`nFor infrastructure/apps/main.tf:" -ForegroundColor Cyan
+Write-Host "--------------------------------------------------------" -ForegroundColor Gray
+Write-Host "terraform {"
+Write-Host "  backend ""azurerm"" {"
+Write-Host "    resource_group_name  = ""$resourceGroupName"""
+Write-Host "    storage_account_name = ""$currentStorageName"""
+Write-Host "    container_name       = ""$containerName"""
+Write-Host "    key                  = ""apps.tfstate"""
 Write-Host "  }"
 Write-Host "}"
 Write-Host "--------------------------------------------------------" -ForegroundColor Gray

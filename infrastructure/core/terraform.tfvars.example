@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is ignored by git for security
+
+subscription_id = "00000000-0000-0000-0000-000000000000"
+tenant_id       = "00000000-0000-0000-0000-000000000000"
+
+project_name    = "events"
+environment     = "dev"
+location        = "eastus"
+
+service_bus_sku = "Standard"
+
+sql_admin_username = "sqladmin"
+sql_admin_password = "YourSecurePassword123!" # Change this!
+
+tags = {
+  Project     = "Events"
+  Environment = "dev"
+  ManagedBy   = "Terraform"
+  Owner       = "your-name"
+}

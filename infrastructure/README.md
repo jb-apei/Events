@@ -2,30 +2,61 @@
 
 This directory contains Terraform configuration for provisioning Azure resources using Azure Verified Modules (AVM) where available.
 
+## New Structure (Split State)
+
+We have refactored the infrastructure into two distinct layers to prevent state locking issues and improve deployment speed.
+
+### `infrastructure/core/`
+Contains the base infrastructure that changes rapidly (Networking, SQL, Messaging).
+- **Resources**: Azure Service Bus, Event Grid, SQL Server (Server-level), Key Vault, Container Registry, Log Analytics.
+- **State File**: `core.tfstate`
+- **Output**: Exposes resource IDs and connection strings for the App layer.
+
+### `infrastructure/apps/`
+Contains the application runtime resources that change frequently.
+- **Resources**: Container Apps Environment, Container Apps (Microservices).
+- **State File**: `apps.tfstate`
+- **Input**: Reads `core.tfstate` via `terraform_remote_state` to get connectivity info.
+
 ## Current Deployment
 
 **Environment**: Development (`dev`)  
 **Resource Group**: `rg-events-dev`  
-**Location**: `westus2`  
+**Location**: `eastus2`  
 **Terraform Version**: >= 1.11 (required for AVM module compatibility)
 
 ## Architecture
 
-**Core Services:**
+**Core Services (Layer 1):**
 - **Service Bus**: Commands queue (`identity-commands`) with DLQ
 - **Event Grid**: 3 topics for domain events (`prospect-events`, `student-events`, `instructor-events`)
 - **Azure SQL**: Transactional and read model databases (Basic tier, 5 DTU)
-- **Container Apps**: 7 microservices with auto-scaling
-- **Container Apps Environment**: Shared environment for all services
+- **Container Registry**: `acreventsdevrcwv3i` (Standard tier)
+- **Security**: Key Vault, App Insights, Log Analytics
 
-**Security & Monitoring:**
-- **Key Vault**: Secrets for connection strings and App Insights keys
-- **Application Insights**: Distributed tracing and monitoring
-- **Log Analytics**: Centralized logging for all services
-- **Managed Identities**: Each container app has identity for Key Vault and ACR access
+**App Services (Layer 2):**
+- **Container Apps Environment**: Hosted in `eastus2`
+- **Container Apps**: 7 microservices
 
-**Container Registry:**
-- **Azure Container Registry**: `acreventsdevrcwv3i` (Premium tier for performance)
+## Running Terraform Manually
+
+Because of the split structure, you must run commands in order:
+
+1. **Deploy Core**:
+   ```bash
+   cd infrastructure/core
+   terraform init
+   terraform apply
+   ```
+
+2. **Deploy Apps**:
+   ```bash
+   cd ../infrastructure/apps
+   terraform init
+   terraform apply
+   ```
+
+*Note: The `scripts/deploy.ps1` script handles this ordering automatically.*
 
 ## Azure Verified Modules Used
 
@@ -39,13 +70,12 @@ This directory contains Terraform configuration for provisioning Azure resources
 - `Azure/avm-res-containerregistry-registry/azurerm` (0.5.1) - Container Registry
 
 ## Custom Modules
-
-- `modules/container-apps` - Container Apps with Key Vault integration, managed identities, and ACR pull permissions
-- `modules/event-grid-topics` - Event Grid Topics wrapper (until AVM provides official module)
+- `modules/container-apps` - Container Apps with Key Vault integration
+- `modules/event-grid-topics` - Event Grid Topics wrapper
 
 ## Prerequisites
 
-1. **Terraform** >= 1.11 (required for AVM elasticpool module)
+1. **Terraform** >= 1.11
 2. **Azure CLI** logged in (`az login`)
 3. **Azure Subscription** with Contributor role
 4. **PowerShell 7+** (for deployment scripts)

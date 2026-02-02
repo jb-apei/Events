@@ -13,35 +13,35 @@ This means:
 2.  **Long Plan Times**: Terraform must refresh the state of *every* resource in the Azure subscription, increasing the duration the lock is held.
 3.  **CI/CD vs Local Conflict**: If GitHub Actions is deploying infrastructure while you are testing locally, one will fail.
 
-## Best Practice Solution: Layered State
+## Best Practice Solution: Layered State (Implemented)
 
-The industry standard to solve this is **State Splitting** (or Layering). We should break the infrastructure into lifecycle-based layers.
+The industry standard to solve this is **State Splitting** (or Layering). We have broken the infrastructure into lifecycle-based layers.
 
-### Proposed Layers
+### Implemented Layers
 
-#### Layer 0: Bootstrap (Current)
+#### Layer 0: Bootstrap
 - Resource Group for Terraform State
 - Storage Account for State
 - *Frequency: One-time setup*
 
-#### Layer 1: Core Infrastructure (`infra-core`)
+#### Layer 1: Core Infrastructure (`infrastructure/core`)
 - Networking (VNETs)
 - Key Vault
 - Service Bus Namespaces (Queues/Topics)
 - SQL Server (Logical Server)
 - Container Registry
 - Log Analytics / App Insights
+- Event Grid
 - *Frequency: Rare (Monthly/Weekly)*
 
-#### Layer 2: Data & Integration (`infra-data`)
-- SQL Databases (Schema often managed by migration tools, but DB provisioning here)
-- Event Grid Domains
-- *Frequency: Occasional*
-
-#### Layer 3: Application Resources (`apps`)
+#### Layer 2: Application Resources (`infrastructure/apps`)
 - Container Apps Environment
 - Container Apps (The resources themselves)
 - *Frequency: Frequent (Daily/Hourly)*
+- *Dependencies*: Reads outputs from Layer 1 via `terraform_remote_state`.
+
+### Benefits
+- **Reduced Blast Radius**: If you break Layer 2, Layer 1 remains intact.
 
 ### Benefits
 - **Reduced Blast Radius**: If you break Layer 3, Layer 1 remains intact.
