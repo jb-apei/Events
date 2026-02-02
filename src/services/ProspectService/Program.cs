@@ -85,15 +85,16 @@ app.UseCors();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-// Ensure database is created
+// Ensure database is created and migrated
 Console.WriteLine("INFO: Initializing database...");
 try
 {
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<ProspectDbContext>();
-        await dbContext.Database.EnsureCreatedAsync();
-        Console.WriteLine("INFO: Database initialized successfully");
+        // Use MigrateAsync instead of EnsureCreatedAsync to support migrations
+        await dbContext.Database.MigrateAsync();
+        Console.WriteLine("INFO: Database initialized and migrated successfully");
     }
 }
 catch (Exception ex)

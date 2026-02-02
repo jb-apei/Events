@@ -3,7 +3,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Accept API Gateway URL as build argument
-ARG VITE_API_URL=https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/api
+ARG VITE_API_URL=https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api
 ENV VITE_API_URL=$VITE_API_URL
 
 # Copy package files
