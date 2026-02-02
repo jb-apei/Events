@@ -18,10 +18,10 @@ function Show-Menu {
     Write-Host "5. Setup User Secrets (.NET)"
     Write-Host "6. Build & Deploy to Azure"
     Write-Host "7. Setup GitHub Secrets (CI/CD)"
-    Write-Host "7. Key Vault: Assign Role"
-    Write-Host "8. Key Vault: Add OID to terraform.tfvars"
-    Write-Host "9. Terraform: Import Role Assignment"
-    Write-Host "10. Terraform: Move State for SPN"
+    Write-Host "8. Key Vault: Assign Role"
+    Write-Host "9. Key Vault: Add OID to terraform.tfvars"
+    Write-Host "10. Terraform: Import Role Assignment"
+    Write-Host "11. Terraform: Move State for SPN"
     Write-Host "Q. Quit"
     Write-Host "==============================" -ForegroundColor Cyan
 }
@@ -38,24 +38,24 @@ while ($true) {
         "5" { ./scripts/setup-user-secrets.ps1; Pause }
         "6" { ./scripts/deploy.ps1; Pause }
         "7" { ./scripts/setup-github-secrets.ps1; Pause }
-        "7" {
+        "8" {
             $userOid = Read-Host "Enter your Azure AD Object ID"
             $kvResourceId = Read-Host "Enter Key Vault Resource ID"
             pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -KeyVaultResourceId $kvResourceId -Command "Assign-KeyVaultRole"
             Pause
         }
-        "8" {
+        "9" {
             $userOid = Read-Host "Enter your Azure AD Object ID"
             pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -Command "Add-Oid-To-Tfvars"
             Pause
         }
-        "9" {
+        "10" {
             $userOid = Read-Host "Enter your Azure AD Object ID"
             $roleAssignmentId = Read-Host "Enter Role Assignment Resource ID"
             pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -UserObjectId $userOid -Command "Import-Terraform-RoleAssignment" -RoleAssignmentResourceId $roleAssignmentId
             Pause
         }
-        "10" {
+        "11" {
             $spnOid = Read-Host "Enter SPN Object ID"
             pwsh -File ./scripts/setup-keyvault-and-terraform.ps1 -Command "Move-Terraform-State" -SpnOid $spnOid
             Pause

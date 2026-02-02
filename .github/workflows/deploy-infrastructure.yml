@@ -8,6 +8,10 @@ on:
       - 'infrastructure/**'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   AZURE_RESOURCE_GROUP: rg-events-dev
   ACR_NAME: acreventsdevrcwv3i
