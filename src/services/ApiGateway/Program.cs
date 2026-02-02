@@ -70,7 +70,7 @@ builder.Services.AddAuthorization();
 
 // Register HTTP client for development mode
 // In Azure Container Apps (internal), we might need to trust internal certs or ignore validation
-builder.Services.AddHttpClient()
+builder.Services.AddHttpClient("Default")
     .ConfigurePrimaryHttpMessageHandler(() => {
         var handler = new HttpClientHandler();
         // IGNORE SSL CERTIFICATE ERRORS (Temporary fix for internal communication)
