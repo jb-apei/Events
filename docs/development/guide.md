@@ -1082,11 +1082,11 @@ dotnet restore --force
 
 ## Additional Resources
 
-- [Architecture Documentation](Architecture.md) - System design and patterns
-- [Deployment Guide](DEPLOYMENT.md) - Azure deployment instructions
-- [API Data Contracts](api-data-contracts.md) - API specifications
-- [Terraform Best Practices](TERRAFORM_BEST_PRACTICES.md) - Infrastructure patterns
-- [Action Plan](ACTION_PLAN.md) - Roadmap for improvements
+- [Architecture Documentation](../architecture/overview.md) - System design and patterns
+- [Deployment Guide](../ops/deployment.md) - Azure deployment instructions
+- [API Data Contracts](../architecture/data-contracts.md) - API specifications
+- [Terraform Best Practices](../ops/terraform.md) - Infrastructure patterns
+- [Action Plan](../status/action-plan.md) - Roadmap for improvements
 
 ---
 

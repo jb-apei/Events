@@ -958,10 +958,10 @@ Recommended alerts in Azure Monitor:
 
 ## Additional Resources
 
-- [Architecture Documentation](Architecture.md) - System design details
-- [Developer Guide](DEVELOPER_GUIDE.md) - Local development setup
-- [Terraform Best Practices](TERRAFORM_BEST_PRACTICES.md) - Infrastructure patterns
-- [Action Plan](ACTION_PLAN.md) - Planned improvements
+- [Architecture Documentation](../architecture/overview.md) - System design details
+- [Developer Guide](../development/guide.md) - Local development setup
+- [Terraform Best Practices](terraform.md) - Infrastructure patterns
+- [Action Plan](../status/action-plan.md) - Planned improvements
 - [Azure Container Apps Documentation](https://learn.microsoft.com/en-us/azure/container-apps/)
 - [Azure Event Grid Documentation](https://learn.microsoft.com/en-us/azure/event-grid/)
 - [Terraform Azure Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)

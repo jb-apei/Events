@@ -19,7 +19,7 @@ This action plan addresses critical technical debt and developer experience issu
 **Action**: 
 - Delete docker-compose.yml
 - If local development orchestration is needed, create simplified version with external .env file
-- Document local development setup in docs/development-mode-patterns.md
+- Document local development setup in docs/development/guide.md
 
 ### 2. Create .env.example Template ✅
 **Issue**: Configuration scattered across appsettings.json, Terraform, and environment variables with no documentation  
@@ -63,9 +63,9 @@ event_grid_subscriber_endpoint_url = "https://${azurerm_container_app.api_gatewa
 **Action**:
 - Merge into 4 core documents:
   1. **README.md**: Quick start, tech stack, project overview
-  2. **docs/DEVELOPER_GUIDE.md**: Setup, configuration, local development, debugging
-  3. **docs/ARCHITECTURE.md**: System design, event schemas, patterns
-  4. **docs/DEPLOYMENT.md**: CI/CD, Azure deployment, troubleshooting
+  2. **docs/development/guide.md**: Setup, configuration, local development, debugging
+  3. **docs/architecture/overview.md**: System design, event schemas, patterns
+  4. **docs/ops/deployment.md**: CI/CD, Azure deployment, troubleshooting
 - Delete: development-mode-patterns.md (687 lines - too long), services-startup-guide.md, service-implementation-checklist.md
 - Consolidate content from deleted files into appropriate sections above
 
@@ -108,7 +108,7 @@ event_grid_subscriber_endpoint_url = "https://${azurerm_container_app.api_gatewa
 - Implement structured logging with correlation ID propagation
 - Add OpenTelemetry SDK to all services (already in project requirements)
 - Configure Application Insights with consistent event names
-- Document logging standards in DEVELOPER_GUIDE.md
+- Document logging standards in docs/development/guide.md
 
 ### 10. Create Service Health Checks
 **Issue**: No health check endpoints for Container Apps probes  
@@ -130,7 +130,7 @@ event_grid_subscriber_endpoint_url = "https://${azurerm_container_app.api_gatewa
   - Start SQL Server container
   - Apply EF migrations
   - Display connection strings
-- Document in DEVELOPER_GUIDE.md
+- Document in docs/development/guide.md
 
 ---
 
