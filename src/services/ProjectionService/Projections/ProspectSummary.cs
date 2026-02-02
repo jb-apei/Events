@@ -60,6 +60,11 @@ public class ProspectSummary
     public string Status { get; set; } = "New";
 
     /// <summary>
+    /// Notes or comments about the prospect.
+    /// </summary>
+    public string? Notes { get; set; }
+
+    /// <summary>
     /// UTC timestamp when prospect was created.
     /// </summary>
     public DateTime CreatedAt { get; set; }

@@ -16,6 +16,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
     lastName: '',
     email: '',
     phone: '',
+    notes: '',
   })
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
@@ -32,6 +33,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
         lastName: selectedProspect.lastName,
         email: selectedProspect.email,
         phone: selectedProspect.phone || '',
+        notes: selectedProspect.notes || '',
       })
     }
   }, [selectedProspect])
@@ -48,6 +50,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
         lastName: '',
         email: '',
         phone: '',
+        notes: '',
       })
     }
   }
@@ -66,7 +69,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
     } else if (eventType === 'ProspectUpdated') {
       if (!formData.prospectId.trim()) errors.prospectId = 'Prospect ID is required'
       // At least one field must be provided for update
-      if (!formData.firstName && !formData.lastName && !formData.email && !formData.phone) {
+      if (!formData.firstName && !formData.lastName && !formData.email && !formData.phone && !formData.notes) {
         errors.general = 'At least one field must be provided for update'
       }
       if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -90,6 +93,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
           lastName: formData.lastName,
           email: formData.email,
           phone: formData.phone || undefined,
+          notes: formData.notes || undefined,
         })
 
         // Reset form after successful creation
@@ -99,6 +103,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
           lastName: '',
           email: '',
           phone: '',
+          notes: '',
         })
         setEventType('')
       } else if (eventType === 'ProspectUpdated') {
@@ -108,6 +113,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
           lastName: formData.lastName || undefined,
           email: formData.email || undefined,
           phone: formData.phone || undefined,
+          notes: formData.notes || undefined,
         })
       }
 
@@ -125,7 +131,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
     <div className="card">
       <h2>Prospect Form</h2>
       <form onSubmit={handleSubmit}>
-        <EventTypePicker 
+        <EventTypePicker
           entityType="Prospect"
           onEventTypeChange={handleEventTypeChange}
           initialEventType={eventType}
@@ -201,6 +207,17 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="notes">Notes</label>
+              <textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                style={{ width: '100%', resize: 'vertical' }}
               />
             </div>
 

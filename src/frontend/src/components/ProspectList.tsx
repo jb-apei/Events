@@ -61,6 +61,11 @@ const ProspectList = ({ onSelectProspect, selectedProspect }: ProspectListProps)
             <p>
               <strong>Status:</strong> {prospect.status}
             </p>
+            {prospect.notes && (
+              <p style={{ fontStyle: 'italic', fontSize: '0.9rem', margin: '4px 0' }}>
+                📝 {prospect.notes}
+              </p>
+            )}
             <p style={{ fontSize: '0.75rem', color: '#999' }}>
               ID: {prospect.prospectId}
             </p>

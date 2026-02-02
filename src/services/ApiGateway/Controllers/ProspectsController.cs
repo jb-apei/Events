@@ -149,12 +149,12 @@ public class ProspectsController : ControllerBase
 
             var command = connection.CreateCommand();
             command.CommandText = @"
-                SELECT ProspectId, FirstName, LastName, Email, Phone, Status, CreatedAt, UpdatedAt
+                SELECT ProspectId, FirstName, LastName, Email, Phone, Status, Notes, CreatedAt, UpdatedAt
                 FROM ProspectSummary
                 ORDER BY CreatedAt DESC
                 OFFSET @Offset ROWS
                 FETCH NEXT @PageSize ROWS ONLY";
-            
+
             command.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
             command.Parameters.AddWithValue("@PageSize", pageSize);
 
@@ -164,14 +164,15 @@ public class ProspectsController : ControllerBase
             {
                 prospects.Add(new
                 {
-                    id = reader.GetInt32(0),
+                    prospectId = reader.GetInt32(0),
                     firstName = reader.IsDBNull(1) ? null : reader.GetString(1),
                     lastName = reader.IsDBNull(2) ? null : reader.GetString(2),
                     email = reader.IsDBNull(3) ? null : reader.GetString(3),
                     phone = reader.IsDBNull(4) ? null : reader.GetString(4),
                     status = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    createdAt = reader.GetDateTime(6),
-                    updatedAt = reader.IsDBNull(7) ? (DateTime?)null : reader.GetDateTime(7)
+                    notes = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    createdAt = reader.GetDateTime(7),
+                    updatedAt = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8)
                 });
             }
 

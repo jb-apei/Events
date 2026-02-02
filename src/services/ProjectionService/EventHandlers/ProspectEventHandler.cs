@@ -69,8 +69,9 @@ public class ProspectEventHandler
                 LastName = data.LastName,
                 Email = data.Email,
                 Phone = data.Phone,
-                Address = null, // Address fields not in event yet
+                Address = null,
                 Status = data.Status ?? "New",
+                Notes = data.Notes,
                 CreatedAt = eventEnvelope.OccurredAt,
                 UpdatedAt = eventEnvelope.OccurredAt,
                 Version = 1

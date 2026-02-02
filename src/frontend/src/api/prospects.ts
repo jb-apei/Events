@@ -17,6 +17,7 @@ export interface CreateProspectRequest {
   lastName: string
   email: string
   phone?: string
+  notes?: string
 }
 
 export interface UpdateProspectRequest {
@@ -25,6 +26,7 @@ export interface UpdateProspectRequest {
   lastName?: string
   email?: string
   phone?: string
+  notes?: string
 }
 
 class ProspectsApi {

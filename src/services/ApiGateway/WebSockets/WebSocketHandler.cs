@@ -79,6 +79,8 @@ public class WebSocketHandler
                 await Task.Delay(TimeSpan.FromSeconds(45), cts.Token);
 
                 // Check if connection is idle
+                // REMOVED: Idle timeout disconnects active listeners.
+                /*
                 if (DateTime.UtcNow - lastActivity > idleTimeout)
                 {
                     _logger.LogInformation("Closing idle WebSocket connection {ConnectionId}", connection.ConnectionId);
@@ -88,6 +90,7 @@ public class WebSocketHandler
                         CancellationToken.None);
                     break;
                 }
+                */
 
                 // Send ping to keep connection alive
                 if (connection.Socket.State == WebSocketState.Open)
