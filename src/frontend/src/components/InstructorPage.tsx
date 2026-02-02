@@ -2,9 +2,33 @@ import { useState } from 'react'
 import InstructorForm from './InstructorForm'
 import InstructorList from './InstructorList'
 import type { Instructor } from '../api/instructors'
+import { useWebSocket } from '../hooks/useWebSocket'
+import { useInvalidateInstructors } from '../hooks/useInstructors'
 
 const InstructorPage = () => {
-  const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null)
+  const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(
+    null
+  )
+  const invalidateInstructors = useInvalidateInstructors()
+
+  const apiUrl =
+    (import.meta as any).env?.VITE_API_URL ||
+    'https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api'
+  const wsUrl =
+    apiUrl.replace(/^https?:/, 'wss:').replace('/api', '') + '/ws/events'
+
+  const { status } = useWebSocket({
+    url: wsUrl,
+    onMessage: (event) => {
+      console.log('WS Message in InstructorPage:', event)
+      if (
+        event.type === 'InstructorCreated' ||
+        event.type === 'InstructorUpdated'
+      ) {
+        invalidateInstructors()
+      }
+    },
+  })
 
   const handleSelectInstructor = (instructor: Instructor) => {
     setSelectedInstructor(instructor)
@@ -14,18 +38,27 @@ const InstructorPage = () => {
     setSelectedInstructor(null)
   }
 
+  const handleCancel = () => {
+    setSelectedInstructor(null)
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">Instructor Management</h1>
+    <div>
+      <div className={`websocket-status ${status}`}>
+        <span className="status-indicator"></span>
+        WebSocket: {status.charAt(0).toUpperCase() + status.slice(1)}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <InstructorForm selectedInstructor={selectedInstructor} onSuccess={handleSuccess} />
-        </div>
-
-        <div>
-          <InstructorList onSelectInstructor={handleSelectInstructor} />
-        </div>
+      <div className="entity-page">
+        <InstructorList
+          onSelectInstructor={handleSelectInstructor}
+          selectedInstructor={selectedInstructor}
+        />
+        <InstructorForm
+          selectedInstructor={selectedInstructor}
+          onSuccess={handleSuccess}
+          onCancel={handleCancel}
+        />
       </div>
     </div>
   )

@@ -263,7 +263,8 @@ body {
   transform: none;
 }
 
-.prospect-page {
+.prospect-page,
+.entity-page {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 2rem;
@@ -299,75 +300,102 @@ body {
   margin-bottom: 1.5rem;
   color: var(--gray-900);
   font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  padding-bottom: 1rem;
   border-bottom: 2px solid var(--gray-100);
+  padding-bottom: 1rem;
 }
 
-.prospect-list {
+/* Entity Lists (Prospects, Students, Instructors) */
+.prospect-list,
+.entity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   max-height: 600px;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gray-300) var(--gray-100);
+  padding-right: 0.5rem;
 }
 
-.prospect-list::-webkit-scrollbar {
-  width: 8px;
+/* Scrollbar styling */
+.prospect-list::-webkit-scrollbar,
+.entity-list::-webkit-scrollbar {
+  width: 6px;
 }
 
-.prospect-list::-webkit-scrollbar-track {
+.prospect-list::-webkit-scrollbar-track,
+.entity-list::-webkit-scrollbar-track {
   background: var(--gray-100);
-  border-radius: var(--radius-md);
 }
 
-.prospect-list::-webkit-scrollbar-thumb {
+.prospect-list::-webkit-scrollbar-thumb,
+.entity-list::-webkit-scrollbar-thumb {
   background: var(--gray-300);
-  border-radius: var(--radius-md);
+  border-radius: 3px;
 }
 
-.prospect-list::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-400);
-}
-
-.prospect-item {
+.prospect-item,
+.entity-item {
   padding: 1.25rem;
-  border: 2px solid var(--gray-200);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
-  margin-bottom: 0.75rem;
   cursor: pointer;
   transition: all var(--transition-base);
-  background: linear-gradient(135deg, white 0%, var(--gray-50) 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-.prospect-item:hover {
-  background: linear-gradient(135deg, var(--primary-blue-light) 0%, white 100%);
-  border-color: var(--primary-blue);
+.prospect-item::before,
+.entity-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary-blue);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.prospect-item:hover,
+.entity-item:hover {
+  background: white;
   transform: translateX(4px);
+  border-color: var(--primary-blue-light);
   box-shadow: var(--shadow-md);
 }
+.prospect-item:hover::before,
+.entity-item:hover::before {
+  opacity: 0.5;
+}
 
-.prospect-item.selected {
-  background: linear-gradient(135deg, var(--primary-blue-light) 0%, white 100%);
+.prospect-item.selected,
+.entity-item.selected {
+  background: white;
   border-color: var(--primary-blue);
   box-shadow: var(--shadow-md);
+  padding-left: 1.5rem;
+}
+.prospect-item.selected::before,
+.entity-item.selected::before {
+  opacity: 1;
 }
 
-.prospect-item h3 {
-  font-size: 1.125rem;
-  margin-bottom: 0.5rem;
+.prospect-item h3,
+.entity-item h3 {
   color: var(--gray-900);
-  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
 }
 
-.prospect-item p {
-  font-size: 0.875rem;
+.prospect-item p,
+.entity-item p {
   color: var(--gray-600);
   margin-bottom: 0.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  font-size: 0.95rem;
 }
+
+/* Legacy prospect styles merged into entity-list above */
 
 .websocket-status {
   display: inline-flex;
@@ -597,7 +625,8 @@ tbody td {
 }
 
 @media (max-width: 968px) {
-  .prospect-page {
+  .prospect-page,
+  .entity-page {
     grid-template-columns: 1fr;
   }
   

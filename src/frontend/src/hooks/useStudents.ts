@@ -37,3 +37,12 @@ export const useUpdateStudent = () => {
     },
   })
 }
+
+// Hook to invalidate student queries when WebSocket events are received
+export const useInvalidateStudents = () => {
+  const queryClient = useQueryClient()
+
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ['students'] })
+  }
+}

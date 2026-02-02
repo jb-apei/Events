@@ -37,3 +37,12 @@ export const useUpdateInstructor = () => {
     },
   })
 }
+
+// Hook to invalidate instructor queries when WebSocket events are received
+export const useInvalidateInstructors = () => {
+  const queryClient = useQueryClient()
+
+  return () => {
+    queryClient.invalidateQueries({ queryKey: ['instructors'] })
+  }
+}
