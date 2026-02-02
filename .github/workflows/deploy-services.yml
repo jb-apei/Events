@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - 'src/**'
+      - '.github/workflows/deploy-services.yml'
   workflow_dispatch:
 
 env:
