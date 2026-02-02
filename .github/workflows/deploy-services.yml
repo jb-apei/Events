@@ -113,13 +113,6 @@ jobs:
              echo "backend_changed=false" >> $GITHUB_OUTPUT
            fi
 
-
-          # Set output
-          echo "matrix={\"include\":$MATRIX}" >> $GITHUB_OUTPUT
-
-          echo "Generated Matrix:"
-          echo $MATRIX
-
   test:
     name: Run Tests
     runs-on: ubuntu-latest
