@@ -47,15 +47,23 @@ public class ProspectsController : ControllerBase
             Payload = request
         };
 
-        await _commandPublisher.PublishCommandAsync(command, correlationId);
+        try
+        {
+            await _commandPublisher.PublishCommandAsync(command, correlationId);
 
-        _logger.LogInformation("CreateProspect command published with CorrelationId {CorrelationId}",
-            correlationId);
+            _logger.LogInformation("CreateProspect command published with CorrelationId {CorrelationId}",
+                correlationId);
 
-        return AcceptedAtAction(
-            nameof(GetProspect),
-            new { id = correlationId },
-            new { correlationId, message = "Prospect creation initiated" });
+            return AcceptedAtAction(
+                nameof(GetProspect),
+                new { id = correlationId },
+                new { correlationId, message = "Prospect creation initiated" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to publish CreateProspect command: {Message}", ex.Message);
+            return StatusCode(500, new { error = "Failed to initiate prospect creation", details = ex.Message });
+        }
     }
 
     /// <summary>
@@ -173,7 +181,7 @@ public class ProspectsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to query read model database");
-            return StatusCode(500, new { error = "Failed to retrieve prospects" });
+            return StatusCode(500, new { error = "Failed to retrieve prospects", details = ex.Message, stackTrace = ex.StackTrace });
         }
     }
 }

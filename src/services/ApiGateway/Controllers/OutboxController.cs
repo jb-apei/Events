@@ -41,10 +41,11 @@ public class OutboxController : ControllerBase
             command.CommandText = @"
                 SELECT TOP 100 
                     Id, 
+                    EventId,
                     EventType, 
-                    AggregateId, 
                     Payload, 
                     CreatedAt, 
+                    Published,
                     PublishedAt
                 FROM Outbox
                 ORDER BY CreatedAt DESC";
@@ -55,13 +56,13 @@ public class OutboxController : ControllerBase
             {
                 outboxMessages.Add(new
                 {
-                    id = reader.GetGuid(0),
-                    eventType = reader.GetString(1),
-                    aggregateId = reader.GetInt32(2),
+                    id = reader.GetInt64(0),
+                    eventId = reader.GetString(1),
+                    eventType = reader.GetString(2),
                     payload = reader.GetString(3),
                     createdAt = reader.GetDateTime(4),
-                    publishedAt = reader.IsDBNull(5) ? (DateTime?)null : reader.GetDateTime(5),
-                    published = !reader.IsDBNull(5)
+                    published = reader.GetBoolean(5),
+                    publishedAt = reader.IsDBNull(6) ? (DateTime?)null : reader.GetDateTime(6)
                 });
             }
 

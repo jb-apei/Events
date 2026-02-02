@@ -50,8 +50,8 @@ export const diagnosticsApi = {
     return {
       total: response.data.length,
       messages: response.data.map(msg => ({
-        id: 0, // Not used from aggregated view
-        eventId: msg.id,
+        id: msg.id, 
+        eventId: msg.eventId,
         eventType: msg.eventType,
         createdAt: msg.createdAt,
         published: msg.published,
@@ -70,8 +70,8 @@ export const diagnosticsApi = {
       });
 
       const messages = response.data.map(msg => ({
-        id: 0,
-        eventId: msg.id,
+        id: msg.id,
+        eventId: msg.eventId,
         eventType: msg.eventType,
         createdAt: msg.createdAt,
         published: msg.published,
