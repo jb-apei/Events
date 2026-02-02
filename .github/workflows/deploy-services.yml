@@ -14,7 +14,7 @@ on:
 env:
   AZURE_RESOURCE_GROUP: rg-events-dev
   ACR_NAME: acreventsdevrcwv3i
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_VERSION: '9.0.x'
 
 jobs:
   filter:
@@ -39,7 +39,7 @@ jobs:
           if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
             BASE_SHA="HEAD~1"
           fi
-          
+
           echo "Comparing HEAD against $BASE_SHA"
           CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
           echo "Changed files:"
@@ -75,25 +75,25 @@ jobs:
           # 5. DYNAMICALLY SCAN SERVICES
           # Find all directories in src/services that accept a Dockerfile (excluding Tests/Shared)
           # We check if the folder itself changed OR if Shared changed
-          
+
           for dockerfile in src/services/*/Dockerfile; do
              # Get the directory (e.g., src/services/ProspectService)
              dir=$(dirname "$dockerfile")
              # Get the service name (e.g., ProspectService)
              serviceNamePascal=$(basename "$dir")
-             
+
              # Convert PascalCase to kebab-case (e.g., prospect-service)
              serviceNameKebab=$(echo "$serviceNamePascal" | sed -r 's/([a-z0-9])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')
-             
+
              # Convention: Container App Name
              appName="ca-events-$serviceNameKebab-dev"
-             
+
              echo "Checking $serviceNamePascal..."
 
              # Check if this specific service folder has changes
              SERVICE_CHANGED=false
              if echo "$CHANGED_FILES" | grep -q "^$dir/"; then SERVICE_CHANGED=true; fi
-             
+
              # Add to build list if: Shared changed OR This Service changed
              if [[ "$SHARED_CHANGED" == "true" ]] || [[ "$SERVICE_CHANGED" == "true" ]]; then
                 add_entry "$serviceNameKebab" "src/services" "$dockerfile" "$appName"
@@ -108,7 +108,7 @@ jobs:
            # Determine if any backend service was added to the matrix
            # If the matrix contains anything other than just 'frontend', or if backend files changed
            # We use a simple check on the changed files list again for the 'test' job condition
-           
+
            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
            if echo "$CHANGED_FILES" | grep -q "^src/services/"; then
              echo "backend_changed=true" >> $GITHUB_OUTPUT
@@ -167,13 +167,13 @@ jobs:
       - name: Build and push to ACR
         run: |
           echo "Building ${{ matrix.name }}..."
-          
+
           # Initialize tags with standard strategies
           # 1. Latest (Global pointer)
           # 2. SHA (Immutable commit ID)
           # 3. Environment (dev) - matching the workflow environment
           TAG_FLAGS="--image ${{ matrix.name }}:latest --image ${{ matrix.name }}:${{ github.sha }} --image ${{ matrix.name }}:dev"
-          
+
           # 4. Semantic Versioning (if triggered by git tag)
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
              VERSION=${GITHUB_REF#refs/tags/}
