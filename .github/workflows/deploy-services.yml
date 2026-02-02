@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
     paths:
       - 'src/**'
       - '.github/workflows/deploy-services.yml'
@@ -165,11 +167,23 @@ jobs:
       - name: Build and push to ACR
         run: |
           echo "Building ${{ matrix.name }}..."
+          
+          # Initialize tags with standard strategies
+          # 1. Latest (Global pointer)
+          # 2. SHA (Immutable commit ID)
+          # 3. Environment (dev) - matching the workflow environment
+          TAG_FLAGS="--image ${{ matrix.name }}:latest --image ${{ matrix.name }}:${{ github.sha }} --image ${{ matrix.name }}:dev"
+          
+          # 4. Semantic Versioning (if triggered by git tag)
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+             VERSION=${GITHUB_REF#refs/tags/}
+             echo "Detected release tag: $VERSION"
+             TAG_FLAGS="$TAG_FLAGS --image ${{ matrix.name }}:$VERSION"
+          fi
 
           az acr build \
             --registry ${{ env.ACR_NAME }} \
-            --image "${{ matrix.name }}:latest" \
-            --image "${{ matrix.name }}:${{ github.sha }}" \
+            $TAG_FLAGS \
             -f "${{ matrix.dockerfile }}" \
             ${{ matrix.context }}
 
