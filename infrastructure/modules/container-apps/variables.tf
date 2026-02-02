@@ -49,6 +49,12 @@ variable "apps" {
     external_ingress = optional(bool, false)
     health_check_path = optional(string)
     env_vars         = optional(map(string), {})
+    secret_env_vars  = optional(map(string), {})
+    secrets          = optional(map(object({
+      value               = optional(string)
+      key_vault_secret_id = optional(string)
+      identity            = optional(string)
+    })), {})
   }))
 }
 

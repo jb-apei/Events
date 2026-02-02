@@ -27,6 +27,16 @@ Set-Location "$PSScriptRoot/.."
 
 $ErrorActionPreference = "Stop"
 
+# Get Git SHA for image tagging
+try {
+    $GitSha = git rev-parse --short HEAD
+    Write-Host "Deployment version: $GitSha" -ForegroundColor Cyan
+}
+catch {
+    Write-Warning "Could not get Git SHA. using 'latest' as tag."
+    $GitSha = "latest"
+}
+
 # Color output functions
 function Write-Step {
     param([string]$Message)
@@ -88,6 +98,7 @@ if (-not $SkipBuild) {
                 # Build from GitHub repository
                 az acr build --registry $Registry `
                     --image "${ImageName}:latest" `
+                    --image "${ImageName}:${GitSha}" `
                     -f "$Context/$DockerfilePath" `
                     "${GitRepo}#${GitBranch}" 2>&1
             }
@@ -98,10 +109,11 @@ if (-not $SkipBuild) {
 
                 az acr build --registry $Registry `
                     --image "${ImageName}:latest" `
+                    --image "${ImageName}:${GitSha}" `
                     -f $validDockerfile `
                     . 2>&1
             }
-        } -ArgumentList $RegistryName, $service.Name, $service.Context, $service.Dockerfile, $GitHubRepo, $GitHubBranch
+        } -ArgumentList $RegistryName, $service.Name, $service.Context, $service.Dockerfile, $GitHubRepo, $GitHubBranch, $GitSha
 
         $buildJobs += @{Job = $job; Name = $service.Name}
     }
@@ -141,7 +153,7 @@ if (-not $SkipTerraform) {
         Push-Location infrastructure/core
 
         Write-Info "Initializing Core..."
-        terraform init -upgrade
+        terraform init -migrate-state
 
         Write-Info "Planning Core..."
         terraform plan -out=tfplan
@@ -158,10 +170,10 @@ if (-not $SkipTerraform) {
         Push-Location infrastructure/apps
 
         Write-Info "Initializing Apps..."
-        terraform init -upgrade
+        terraform init -migrate-state
 
         Write-Info "Planning Apps..."
-        terraform plan -out=tfplan
+        terraform plan -out=tfplan -var "image_tag=$GitSha"
         if ($LASTEXITCODE -ne 0) { throw "Terraform plan failed (Apps)" }
 
         Write-Info "Applying Apps..."

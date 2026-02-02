@@ -26,6 +26,17 @@ resource "azurerm_container_app" "apps" {
     }
   }
 
+  # Secrets configuration (Value or Key Vault Reference)
+  dynamic "secret" {
+    for_each = try(each.value.secrets, {})
+    content {
+      name                = secret.key
+      value               = secret.value.value
+      key_vault_secret_id = secret.value.key_vault_secret_id
+      identity            = secret.value.identity
+    }
+  }
+
   template {
     container {
       name   = each.value.name
@@ -49,6 +60,15 @@ resource "azurerm_container_app" "apps" {
         content {
           name  = env.key
           value = env.value
+        }
+      }
+
+      # Add secret environment variables
+      dynamic "env" {
+        for_each = try(each.value.secret_env_vars, {})
+        content {
+          name        = env.key
+          secret_name = env.value
         }
       }
 
