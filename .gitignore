@@ -60,3 +60,5 @@ src/services/*.tar.gz
 *.tgz
 
 docs/ops/infrastructure-reference.md
+
+prospect_service_config.json
