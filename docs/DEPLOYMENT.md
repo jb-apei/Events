@@ -256,10 +256,10 @@ az containerapp list \
   -o table
 
 # Test API Gateway
-curl https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/health
+curl https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/health
 
 # Test Frontend
-curl https://ca-events-frontend-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
+curl https://ca-events-frontend-dev.orangehill-95ada862.eastus2.azurecontainerapps.io
 ```
 
 ## Troubleshooting
@@ -431,15 +431,39 @@ View real-time telemetry in Azure Portal:
 4. Analyze **Performance** for slow requests
 5. Query **Logs** using KQL
 
+## Container Tagging Strategy
+
+The deployment pipeline implements a multi-tagging strategy to ensuring traceability, reproducibility, and ease of use.
+
+Every successful build produces images pushed to the Azure Container Registry (ACR) with the following tags:
+
+### Standard Tags (Automatic)
+| Tag | Description | Use Case |
+|-----|-------------|----------|
+| `:latest` | Points to the most recent successful build on `master`. | Developer convenience (e.g., `docker pull` for debugging). **Never deployed to production.** |
+| `:<commit-sha>` | The full Git Commit SHA (e.g., `:a1b2c3d...`). | **The Deployment Standard.** Used by running services to ensure the running code matches a specific point in git history exactly. |
+| `:dev` | Indicates the image is suitable for the development environment. | Environment-specific referencing. |
+
+### Semantic Versioning (Manual)
+To create a strictly versioned release (e.g., for production history), push a git tag starting with `v` (e.g., `v1.2.0`).
+
+```bash
+# Create and push a semantic version tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+**Result:** The pipeline will build the images and add the tag `:v1.0.0` to them in ACR.
+
 ## Resource URLs
 
 After deployment, access services at:
 
-- **Frontend**: https://ca-events-frontend-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
-- **API Gateway**: https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
-- **WebSocket**: wss://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/ws/events
-- **API Docs**: https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/swagger
-- **Outbox API**: https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/api/outbox
+- **Frontend**: https://ca-events-frontend-dev.orangehill-95ada862.eastus2.azurecontainerapps.io
+- **API Gateway**: https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io
+- **WebSocket**: wss://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/ws/events
+- **API Docs**: https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/swagger
+- **Outbox API**: https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api/outbox
 
 ## Cleanup
 
@@ -580,10 +604,10 @@ az role assignment list \
 **Diagnosis:**
 ```powershell
 # Test WebSocket from PowerShell (requires websocat tool)
-websocat wss://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/ws/events
+websocat wss://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/ws/events
 
 # Or use JavaScript in browser console
-const ws = new WebSocket('wss://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/ws/events');
+const ws = new WebSocket('wss://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/ws/events');
 ws.onopen = () => console.log('Connected');
 ws.onerror = (err) => console.error('Error:', err);
 ```
@@ -780,7 +804,7 @@ az eventgrid event-subscription show \
 **Solutions:**
 ```powershell
 # Test webhook endpoint manually
-curl -X POST https://ca-events-projection-service-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/events/webhook \
+curl -X POST https://ca-events-projection-service-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/events/webhook \
   -H "Content-Type: application/json" \
   -d '{"test": "event"}'
 
@@ -878,10 +902,10 @@ All services expose `/health` endpoints:
 
 ```powershell
 # API Gateway
-curl https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/health
+curl https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/health
 
 # ProjectionService
-curl https://ca-events-projection-service-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/health
+curl https://ca-events-projection-service-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/health
 ```
 
 ### Alert Configuration

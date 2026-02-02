@@ -105,8 +105,8 @@ All 7 services deployed to Azure Container Apps Environment:
 After successful deployment, Terraform outputs critical configuration:
 
 **Public URLs:**
-- `api_gateway_url` - API Gateway endpoint (https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io)
-- `frontend_url` - Frontend endpoint (https://ca-events-frontend-dev.icyhill-68ffa719.westus2.azurecontainerapps.io)
+- `api_gateway_url` - API Gateway endpoint (https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io)
+- `frontend_url` - Frontend endpoint (https://ca-events-frontend-dev.orangehill-95ada862.eastus2.azurecontainerapps.io)
 
 **Infrastructure IDs:**
 - `container_apps_environment_id` - Container Apps Environment resource ID

@@ -350,9 +350,9 @@ The system uses a strict "Zero Trust" approach where secrets are generated proac
 
 ### Resource URLs
 
-- **Frontend**: https://ca-events-frontend-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
-- **API Gateway**: https://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io
-- **WebSocket**: wss://ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io/ws/events
+- **Frontend**: https://ca-events-frontend-dev.orangehill-95ada862.eastus2.azurecontainerapps.io
+- **API Gateway**: https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io
+- **WebSocket**: wss://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/ws/events
 
 ## Implementation Status
 

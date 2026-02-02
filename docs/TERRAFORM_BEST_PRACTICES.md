@@ -145,9 +145,9 @@ Azure Container Apps use this FQDN structure:
 ```
 
 Example:
-- Environment domain: `icyhill-68ffa719.westus2.azurecontainerapps.io`
+- Environment domain: `orangehill-95ada862.eastus2.azurecontainerapps.io`
 - Container App name: `ca-events-api-gateway-dev`
-- **Full FQDN**: `ca-events-api-gateway-dev.icyhill-68ffa719.westus2.azurecontainerapps.io`
+- **Full FQDN**: `ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io`
 
 ### Locals Block Pattern
 
