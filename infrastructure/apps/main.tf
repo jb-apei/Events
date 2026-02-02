@@ -66,8 +66,8 @@ module "container_apps" {
       image             = "${data.terraform_remote_state.core.outputs.container_registry_login_server}/prospect-service:${var.image_tag}"
       acr_resource_id   = data.terraform_remote_state.core.outputs.container_registry_id
       port              = 8080
-      cpu               = 0.25
-      memory            = "0.5Gi"
+      cpu               = 0.5
+      memory            = "1.0Gi"
       min_replicas      = 1
       max_replicas      = 3
       ingress_enabled   = true
@@ -86,8 +86,8 @@ module "container_apps" {
       image             = "${data.terraform_remote_state.core.outputs.container_registry_login_server}/student-service:${var.image_tag}"
       acr_resource_id   = data.terraform_remote_state.core.outputs.container_registry_id
       port              = 8080
-      cpu               = 0.25
-      memory            = "0.5Gi"
+      cpu               = 0.5
+      memory            = "1.0Gi"
       min_replicas      = 1
       max_replicas      = 3
       ingress_enabled   = true
@@ -106,8 +106,8 @@ module "container_apps" {
       image             = "${data.terraform_remote_state.core.outputs.container_registry_login_server}/instructor-service:${var.image_tag}"
       acr_resource_id   = data.terraform_remote_state.core.outputs.container_registry_id
       port              = 8080
-      cpu               = 0.25
-      memory            = "0.5Gi"
+      cpu               = 0.5
+      memory            = "1.0Gi"
       min_replicas      = 1
       max_replicas      = 3
       ingress_enabled   = true
@@ -168,8 +168,8 @@ module "container_apps" {
       image             = "${data.terraform_remote_state.core.outputs.container_registry_login_server}/projection-service:${var.image_tag}"
       acr_resource_id   = data.terraform_remote_state.core.outputs.container_registry_id
       port              = 8080
-      cpu               = 0.25
-      memory            = "0.5Gi"
+      cpu               = 0.5
+      memory            = "1.0Gi"
       min_replicas      = 1
       max_replicas      = 3
       ingress_enabled   = true
