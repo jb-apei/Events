@@ -22,7 +22,8 @@ export const useCreateStudent = () => {
   return useMutation({
     mutationFn: (request: CreateStudentRequest) => studentsApi.createStudent(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] })
+      // queryClient.invalidateQueries({ queryKey: ['students'] })
+      console.log('Command sent successfully. Waiting for WebSocket update...')
     },
   })
 }
@@ -33,7 +34,8 @@ export const useUpdateStudent = () => {
   return useMutation({
     mutationFn: (request: UpdateStudentRequest) => studentsApi.updateStudent(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] })
+      // queryClient.invalidateQueries({ queryKey: ['students'] })
+      console.log('Command sent successfully. Waiting for WebSocket update...')
     },
   })
 }

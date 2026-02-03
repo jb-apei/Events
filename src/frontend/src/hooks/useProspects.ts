@@ -24,8 +24,9 @@ export const useCreateProspect = () => {
   return useMutation({
     mutationFn: (request: CreateProspectRequest) => prospectsApi.createProspect(request),
     onSuccess: () => {
-      // Invalidate prospects list to trigger refetch
-      queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      // Don't invalidate immediately - wait for WebSocket event
+      // queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      console.log('Command sent successfully. Waiting for WebSocket update...')
     },
   })
 }
@@ -36,9 +37,10 @@ export const useUpdateProspect = () => {
   return useMutation({
     mutationFn: (request: UpdateProspectRequest) => prospectsApi.updateProspect(request),
     onSuccess: () => {
-      // Invalidate prospects list and individual prospect queries
-      queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
-      queryClient.invalidateQueries({ queryKey: ['prospect'] })
+      // Don't invalidate immediately - wait for WebSocket event
+      // queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      // queryClient.invalidateQueries({ queryKey: ['prospect'] })
+      console.log('Command sent successfully. Waiting for WebSocket update...')
     },
   })
 }

@@ -22,7 +22,8 @@ export const useCreateInstructor = () => {
   return useMutation({
     mutationFn: (request: CreateInstructorRequest) => instructorsApi.createInstructor(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['instructors'] })
+      // queryClient.invalidateQueries({ queryKey: ['instructors'] })
+      console.log('Command sent successfully. Waiting for WebSocket update...')
     },
   })
 }
@@ -33,7 +34,8 @@ export const useUpdateInstructor = () => {
   return useMutation({
     mutationFn: (request: UpdateInstructorRequest) => instructorsApi.updateInstructor(request),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['instructors'] })
+      // queryClient.invalidateQueries({ queryKey: ['instructors'] })
+      console.log('Command sent successfully. Waiting for WebSocket update...')
     },
   })
 }
