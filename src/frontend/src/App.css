@@ -66,7 +66,7 @@ body {
 
 .app-header {
   background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
-  color: white;
+  color: var(--gray-400);
   padding: 1.25rem 2rem;
   display: flex;
   justify-content: space-between;
@@ -80,10 +80,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.025em;
-  background: linear-gradient(135deg, #ffffff 0%, var(--primary-blue-light) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--gray-300);
 }
 
 .app-header nav {
