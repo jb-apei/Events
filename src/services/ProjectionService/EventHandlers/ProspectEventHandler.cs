@@ -230,6 +230,8 @@ public class ProspectEventHandler
         summary.Phone = data.Phone;
         summary.Address = null; // Address fields not in event yet
         summary.Status = data.Status ?? "New";
+        summary.Notes = data.Notes; 
+        summary.Source = data.Source; 
     }
 
 }

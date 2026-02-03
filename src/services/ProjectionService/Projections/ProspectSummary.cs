@@ -60,6 +60,12 @@ public class ProspectSummary
     public string Status { get; set; } = "New";
 
     /// <summary>
+    /// Lead source.
+    /// </summary>
+    [MaxLength(100)]
+    public string? Source { get; set; }
+
+    /// <summary>
     /// Notes or comments about the prospect.
     /// </summary>
     public string? Notes { get; set; }
