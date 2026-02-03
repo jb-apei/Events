@@ -15,7 +15,8 @@ public class CommandPublisher : IAsyncDisposable
     public CommandPublisher(IConfiguration configuration, ILogger<CommandPublisher> logger, IHttpClientFactory? httpClientFactory = null)
     {
         _logger = logger;
-        var connectionString = configuration["ServiceBus:ConnectionString"];
+        var connectionString = configuration["ServiceBus:ConnectionString"] 
+            ?? configuration["Azure:ServiceBus:ConnectionString"];
 
         // Development mode: Use HTTP calls to ProspectService instead of Service Bus
         if (string.IsNullOrEmpty(connectionString))

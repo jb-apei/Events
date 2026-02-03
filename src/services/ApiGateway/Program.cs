@@ -15,8 +15,15 @@ var appInsightsConnectionString = builder.Configuration["ApplicationInsights:Con
 builder.Services.AddTelemetry("ApiGateway", appInsightsConnectionString);
 
 // Add Health Checks
-builder.Services.AddHealthChecks()
-    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"]);
+var serviceBusConnectionString = builder.Configuration["ServiceBus:ConnectionString"]
+    ?? builder.Configuration["Azure:ServiceBus:ConnectionString"];
+
+var healthChecks = builder.Services.AddHealthChecks();
+
+if (!string.IsNullOrEmpty(serviceBusConnectionString))
+{
+    healthChecks.AddAzureHealthChecks(serviceBusConnectionString);
+}
 
 // Add services to the container
 builder.Services.AddControllers();

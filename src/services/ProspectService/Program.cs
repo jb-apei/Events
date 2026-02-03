@@ -40,7 +40,9 @@ builder.Services.AddScoped<CreateProspectCommandHandler>();
 builder.Services.AddScoped<UpdateProspectCommandHandler>();
 
 // Register Service Bus consumer as background service only if connection string configured
-var serviceBusConnectionString = builder.Configuration["ServiceBus:ConnectionString"];
+var serviceBusConnectionString = builder.Configuration["ServiceBus:ConnectionString"]
+    ?? builder.Configuration["Azure:ServiceBus:ConnectionString"];
+
 if (!string.IsNullOrEmpty(serviceBusConnectionString))
 {
     builder.Services.AddHostedService<ServiceBusCommandConsumer>();
@@ -52,9 +54,13 @@ else
 }
 
 // Add health checks (includes EF Core DB check + Service Bus check)
-builder.Services.AddHealthChecks()
-    .AddAzureHealthChecks(builder.Configuration["ServiceBus:ConnectionString"])
+var healthChecks = builder.Services.AddHealthChecks()
     .AddDbContextCheck<ProspectDbContext>();
+
+if (!string.IsNullOrEmpty(serviceBusConnectionString))
+{
+    healthChecks.AddAzureHealthChecks(serviceBusConnectionString);
+}
 
 // Add CORS (configure as needed)
 builder.Services.AddCors(options =>
