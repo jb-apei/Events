@@ -3,7 +3,7 @@ using EventRelay.OutboxRelay;
 using Microsoft.EntityFrameworkCore;
 using Shared.Infrastructure.Telemetry;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // Add Telemetry (OpenTelemetry + Application Insights)
 var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
@@ -36,5 +36,8 @@ builder.Services.AddHostedService<OutboxRelayService>();
 // Logging
 builder.Logging.AddConsole();
 
-var host = builder.Build();
-host.Run();
+var app = builder.Build();
+
+app.UseHealthChecks("/health");
+
+app.Run();
