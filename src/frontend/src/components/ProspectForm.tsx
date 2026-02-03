@@ -35,17 +35,6 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
         phone: selectedProspect.phone || '',
         notes: selectedProspect.notes || '',
       })
-    } else {
-      // Clear form when selection is removed (e.g. after successful update)
-      setEventType('')
-      setFormData({
-        prospectId: '',
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        notes: '',
-      })
     }
   }, [selectedProspect])
 

@@ -83,7 +83,7 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
     const utcDateStr = isIsoWithTimeZone ? dateStr : `${dateStr}Z`;
     return new Date(utcDateStr).toLocaleString(undefined, {
       year: 'numeric',
-      month: 'numeric', 
+      month: 'numeric',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
