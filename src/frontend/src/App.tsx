@@ -85,7 +85,7 @@ function App() {
             <div>
               <h1>Events - Identity Management System</h1>
               <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '-5px' }}>
-                v{import.meta.env.VITE_APP_VERSION || 'DEV'}
+                Commit: {import.meta.env.VITE_APP_VERSION || 'Local'}
               </div>
             </div>
             {isAuthenticated && (
