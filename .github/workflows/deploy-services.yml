@@ -183,9 +183,13 @@ jobs:
              TAG_FLAGS="$TAG_FLAGS --image ${{ matrix.name }}:$VERSION"
           fi
 
+          # Get Short SHA
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+
           az acr build \
             --registry ${{ env.ACR_NAME }} \
             $TAG_FLAGS \
+            --build-arg BUILD_VERSION=$SHORT_SHA \
             -f "${{ matrix.dockerfile }}" \
             ${{ matrix.context }}
 

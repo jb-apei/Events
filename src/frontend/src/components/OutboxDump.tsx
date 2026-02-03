@@ -136,7 +136,7 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
                     {msg.publishedAt ? formatDate(msg.publishedAt) : '-'}
                   </td>
                   <td className="px-4 py-2 border-b">
-                    <div className="max-w-md overflow-auto bg-gray-50 p-2 rounded border border-gray-200">
+                    <div className="max-w-md max-h-60 overflow-auto bg-gray-50 p-2 rounded border border-gray-200">
                       <pre className="text-xs font-mono whitespace-pre">{msg.payload}</pre>
                     </div>
                   </td>
