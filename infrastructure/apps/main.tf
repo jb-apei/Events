@@ -234,6 +234,38 @@ resource "azurerm_eventgrid_event_subscription" "projection_subscriptions" {
   depends_on = [module.container_apps]
 }
 
+# Event Grid Event Subscriptions to API Gateway webhook (for WebSocket UI updates)
+resource "azurerm_eventgrid_event_subscription" "api_gateway_subscriptions" {
+  for_each = data.terraform_remote_state.core.outputs.event_grid_topic_ids
+
+  name                  = "sub-${each.key}-to-api-gateway"
+  scope                 = each.value
+  event_delivery_schema = "CloudEventSchemaV1_0"
+
+  webhook_endpoint {
+    url = "https://${module.container_apps.container_app_fqdns["api-gateway"]}/api/events/webhook"
+  }
+
+  included_event_types = [
+    "ProspectCreated",
+    "ProspectUpdated",
+    "ProspectMerged",
+    "StudentCreated",
+    "StudentUpdated",
+    "StudentChanged",
+    "InstructorCreated",
+    "InstructorUpdated",
+    "InstructorDeactivated"
+  ]
+
+  retry_policy {
+    max_delivery_attempts = 30
+    event_time_to_live    = 1440 # 24 hours
+  }
+
+  depends_on = [module.container_apps]
+}
+
 # Grant Container Apps AcrPull permission
 resource "azurerm_role_assignment" "container_apps_acr_pull" {
   for_each = module.container_apps.container_app_identities
