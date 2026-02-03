@@ -124,16 +124,25 @@ public class EventsController : ControllerBase
     }
 
     /// <summary>
-    /// Handles HTTP OPTIONS requests for the webhook endpoint (required for Event Grid validation)
+    /// CloudEvents Abuse Protection Handshake (OPTIONS)
+    /// Required/Recommended for CloudEvents subscriptions in Azure Event Grid
     /// </summary>
     [HttpOptions("webhook")]
-    [AllowAnonymous]
     public IActionResult WebhookOptions()
     {
-        // Set required CORS headers for Event Grid validation
-        Response.Headers.Add("Access-Control-Allow-Origin", "*");
-        Response.Headers.Add("Access-Control-Allow-Methods", "POST, OPTIONS");
-        Response.Headers.Add("Access-Control-Allow-Headers", "*");
+        // Event Grid sends "WebHook-Request-Origin" header
+        if (Request.Headers.TryGetValue("WebHook-Request-Origin", out var origin))
+        {
+            // We must echo it back in "WebHook-Allowed-Origin"
+            Response.Headers.Append("WebHook-Allowed-Origin", origin);
+
+            // Allow POST requests and a reasonable rate
+            Response.Headers.Append("WebHook-Allowed-Rate", "120");
+
+            _logger.LogInformation("Handled CloudEvents OPTIONS handshake for origin: {Origin}", origin);
+            return Ok();
+        }
+
         return Ok();
     }
 

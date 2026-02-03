@@ -16,19 +16,43 @@ const queryClient = new QueryClient({
   },
 })
 
+// Simple JWT parser (since we don't have jwt-decode installed)
+const parseJwt = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(jsonPayload)
+  } catch (e) {
+    return null
+  }
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [userEmail, setUserEmail] = useState<string>('')
 
   useEffect(() => {
     const token = localStorage.getItem('jwt_token')
     if (token) {
       setIsAuthenticated(true)
+      const payload = parseJwt(token)
+      if (payload && payload.email) {
+        setUserEmail(payload.email)
+      }
     }
 
     // Listen for auth:logout events (triggered by 401 responses)
     const handleLogout = () => {
       console.log('[App] Logout event received - clearing authentication')
       setIsAuthenticated(false)
+      setUserEmail('')
     }
 
     window.addEventListener('auth:logout', handleLogout)
@@ -36,12 +60,20 @@ function App() {
   }, [])
 
   const handleLoginSuccess = () => {
+    const token = localStorage.getItem('jwt_token')
+    if (token) {
+      const payload = parseJwt(token)
+      if (payload && payload.email) {
+        setUserEmail(payload.email)
+      }
+    }
     setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('jwt_token')
     setIsAuthenticated(false)
+    setUserEmail('')
   }
 
   return (
@@ -49,9 +81,19 @@ function App() {
       <BrowserRouter>
         <div className="app">
           <header className="app-header">
-            <h1>Events - Identity Management System</h1>
+            <div>
+              <h1>Events - Identity Management System</h1>
+              <div style={{ fontSize: '0.75rem', opacity: 0.7, marginTop: '-5px' }}>
+                v{import.meta.env.VITE_APP_VERSION || 'DEV'}
+              </div>
+            </div>
             {isAuthenticated && (
               <div className="flex items-center gap-4">
+                {userEmail && (
+                  <div style={{ fontSize: '0.9rem', marginRight: '1rem', opacity: 0.9 }}>
+                    Hello, <strong>{userEmail}</strong>
+                  </div>
+                )}
                 <nav className="flex gap-4">
                   <Link to="/" className="text-white hover:underline">Prospects</Link>
                   <Link to="/students" className="text-white hover:underline">Students</Link>

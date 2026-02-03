@@ -6,6 +6,10 @@ WORKDIR /app
 ARG VITE_API_URL=https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api
 ENV VITE_API_URL=$VITE_API_URL
 
+# Accept Build Version
+ARG BUILD_VERSION=DEV
+ENV VITE_APP_VERSION=$BUILD_VERSION
+
 # Copy package files
 COPY package*.json ./
 
