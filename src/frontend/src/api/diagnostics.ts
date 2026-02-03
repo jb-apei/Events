@@ -10,7 +10,7 @@ export interface OutboxMessage {
   createdAt: string;
   published: boolean;
   publishedAt: string | null;
-  payloadPreview: string;
+  payload: string;
 }
 
 export interface OutboxStats {
@@ -56,7 +56,7 @@ export const diagnosticsApi = {
         createdAt: msg.createdAt,
         published: msg.published,
         publishedAt: msg.publishedAt,
-        payloadPreview: msg.payload ? msg.payload.substring(0, 100) : ''
+        payload: msg.payload || ''
       }))
     };
   },
@@ -76,7 +76,7 @@ export const diagnosticsApi = {
         createdAt: msg.createdAt,
         published: msg.published,
         publishedAt: msg.publishedAt,
-        payloadPreview: msg.payload ? msg.payload.substring(0, 100) : ''
+        payload: msg.payload || ''
       }));
 
       return [{

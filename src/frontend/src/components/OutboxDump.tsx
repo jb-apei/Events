@@ -107,7 +107,7 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
                 <th className="px-4 py-2 border-b text-left">Created At (Client Time)</th>
                 <th className="px-4 py-2 border-b text-center">Published</th>
                 <th className="px-4 py-2 border-b text-left">Published At (Client Time)</th>
-                <th className="px-4 py-2 border-b text-left">Payload Preview</th>
+                <th className="px-4 py-2 border-b text-left w-1/3">Payload</th>
               </tr>
             </thead>
             <tbody>
@@ -135,8 +135,10 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
                   <td className="px-4 py-2 border-b">
                     {msg.publishedAt ? formatDate(msg.publishedAt) : '-'}
                   </td>
-                  <td className="px-4 py-2 border-b font-mono text-xs truncate max-w-xs">
-                    {msg.payloadPreview.substring(0, 80)}...
+                  <td className="px-4 py-2 border-b">
+                    <div className="max-w-md overflow-auto bg-gray-50 p-2 rounded border border-gray-200">
+                      <pre className="text-xs font-mono whitespace-pre">{msg.payload}</pre>
+                    </div>
                   </td>
                 </tr>
               ))}
