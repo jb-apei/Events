@@ -92,7 +92,7 @@ if (-not $SkipBuild) {
         Write-Info "Starting build for $($service.Name)..."
 
         $job = Start-Job -ScriptBlock {
-            param($Registry, $ImageName, $Context, $DockerfilePath, $GitRepo, $GitBranch)
+            param($Registry, $ImageName, $Context, $DockerfilePath, $GitRepo, $GitBranch, $GitSha)
 
             if ($GitRepo) {
                 # Build from GitHub repository

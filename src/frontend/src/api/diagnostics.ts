@@ -50,7 +50,7 @@ export const diagnosticsApi = {
     return {
       total: response.data.length,
       messages: response.data.map(msg => ({
-        id: msg.id, 
+        id: msg.id,
         eventId: msg.eventId,
         eventType: msg.eventType,
         createdAt: msg.createdAt,
