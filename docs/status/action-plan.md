@@ -96,6 +96,15 @@ event_grid_subscriber_endpoint_url = "https://${azurerm_container_app.api_gatewa
 - Add to Events.sln and GitHub Actions workflow
 - Target: 70% code coverage for handlers and domain logic
 
+### 9. Security - Migrate JWT from LocalStorage to Cookies
+**Issue**: JWT tokens stored in localStorage are vulnerable to XSS attacks (See Issue #11)
+**Impact**: High - Potential account compromise
+**Effort**: 4 hours
+**Action**:
+- Update ApiGateway to issue HttpOnly, Secure, SameSite cookies on login
+- Update Frontend to remove localStorage logic and rely on browser cookie handling
+- Document new flow in ADR-004
+
 ---
 
 ## 🟢 MEDIUM Priority (Week 2)

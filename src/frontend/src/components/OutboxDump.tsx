@@ -76,6 +76,14 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
     );
   }
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    // Ensure date is treated as UTC if no timezone info is present
+    const isIsoWithTimeZone = /Z|[+-]\d{2}:\d{2}$/.test(dateStr);
+    const utcDateStr = isIsoWithTimeZone ? dateStr : `${dateStr}Z`;
+    return new Date(utcDateStr).toLocaleString();
+  };
+
   return (
     <div className="mb-8">
       <div className="flex justify-between items-center mb-2">
@@ -96,9 +104,9 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
                 <th className="px-4 py-2 border-b text-left">ID</th>
                 <th className="px-4 py-2 border-b text-left">Event ID</th>
                 <th className="px-4 py-2 border-b text-left">Event Type</th>
-                <th className="px-4 py-2 border-b text-left">Created At</th>
+                <th className="px-4 py-2 border-b text-left">Created At (Client Time)</th>
                 <th className="px-4 py-2 border-b text-center">Published</th>
-                <th className="px-4 py-2 border-b text-left">Published At</th>
+                <th className="px-4 py-2 border-b text-left">Published At (Client Time)</th>
                 <th className="px-4 py-2 border-b text-left">Payload Preview</th>
               </tr>
             </thead>
@@ -111,7 +119,7 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
                   </td>
                   <td className="px-4 py-2 border-b font-semibold">{msg.eventType}</td>
                   <td className="px-4 py-2 border-b">
-                    {new Date(msg.createdAt).toLocaleString()}
+                    {formatDate(msg.createdAt)}
                   </td>
                   <td className="px-4 py-2 border-b text-center">
                     {msg.published ? (
@@ -125,7 +133,7 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
                     )}
                   </td>
                   <td className="px-4 py-2 border-b">
-                    {msg.publishedAt ? new Date(msg.publishedAt).toLocaleString() : '-'}
+                    {msg.publishedAt ? formatDate(msg.publishedAt) : '-'}
                   </td>
                   <td className="px-4 py-2 border-b font-mono text-xs truncate max-w-xs">
                     {msg.payloadPreview.substring(0, 80)}...

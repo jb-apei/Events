@@ -56,11 +56,12 @@ Event-driven microservices architecture for managing Prospects, Students, and In
 
 | Document | Description |
 |----------|-------------|
-| **[DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** | Complete setup, configuration, patterns, debugging |
-| **[Architecture.md](docs/Architecture.md)** | System design, CQRS, event schemas |
-| **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** | Azure deployment, CI/CD, troubleshooting |
-| **[ACTION_PLAN.md](docs/ACTION_PLAN.md)** | Roadmap for improvements |
-| **[TERRAFORM_BEST_PRACTICES.md](docs/TERRAFORM_BEST_PRACTICES.md)** | Infrastructure patterns |
+| **[DEVELOPER_GUIDE.md](docs/development/guide.md)** | Complete setup, configuration, patterns, debugging |
+| **[Architecture Overview](docs/architecture/overview.md)** | System design, CQRS, event schemas |
+| **[Deep Dive Architecture](docs/architecture/ARCHITECTURE_DEEP_DIVE.md)** | Detailed implementation reference |
+| **[Deployment](docs/ops/deployment.md)** | Azure deployment, CI/CD, troubleshooting |
+| **[Action Plan](docs/status/action-plan.md)** | Roadmap for improvements |
+| **[Terraform Best Practices](docs/ops/terraform.md)** | Infrastructure patterns |
 
 ---
 

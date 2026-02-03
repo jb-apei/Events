@@ -33,7 +33,7 @@ The system consists of 4 microservices:
 - `GET /api/instructors` - Proxy to InstructorService
 - `POST /api/instructors` - Proxy to InstructorService
 - `PUT /api/instructors/{id}` - Proxy to InstructorService
-- **WebSocket**: `ws://localhost:5037/ws` - Real-time event subscriptions
+- **WebSocket**: `ws://localhost:5037/ws/events` - Real-time event subscriptions (Hub)
 
 ---
 

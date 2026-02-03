@@ -429,3 +429,8 @@ The system uses a strict "Zero Trust" approach where secrets are generated proac
 - **Multi-tenancy**: Tenant isolation at data and event level
 - **GraphQL**: Unified query layer for read models
 - **CDC (Change Data Capture)**: Alternative to Outbox pattern
+
+## Further Reading
+- [Architecture Deep Dive](ARCHITECTURE_DEEP_DIVE.md) - Detailed implementation notes and component diagrams.
+- [API Reference](api-reference.md)
+- [Data Schema](data-schema-architecture.md)

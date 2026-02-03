@@ -3,7 +3,9 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Accept API Gateway URL as build argument
-ARG VITE_API_URL=https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api
+# Default to /api to allow runtime configuration via Nginx proxy (envsubst)
+# This enables "build once, deploy anywhere" by decoupling the API URL from the build artifact
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 
 # Accept Build Version
