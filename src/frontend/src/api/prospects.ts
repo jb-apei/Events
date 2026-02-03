@@ -5,7 +5,8 @@ export interface Prospect {
   firstName: string
   lastName: string
   email: string
-  phone?: string
+  phone: string
+  contacts: number
   status: string
   notes?: string
   createdAt: string

@@ -23,15 +23,43 @@ export const useCreateProspect = () => {
 
   return useMutation({
     mutationFn: (request: CreateProspectRequest) => prospectsApi.createProspect(request),
-    onSuccess: () => {
-      // Don't invalidate immediately - wait for WebSocket event
-      // queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
-      console.log('Command sent successfully. Waiting for WebSocket update...')
+    onMutate: async (newProspect) => {
+      // 1. Cancel outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: PROSPECTS_QUERY_KEY })
 
-      // Fallback: Invalidate after delay in case WebSocket misses
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
-      }, 1000)
+      // 2. Snapshot the previous value
+      const previousProspects = queryClient.getQueryData<Prospect[]>(PROSPECTS_QUERY_KEY)
+
+      // 3. Optimistically update to the new value
+      if (previousProspects) {
+        queryClient.setQueryData<Prospect[]>(PROSPECTS_QUERY_KEY, (old) => {
+          if (!old) return []
+          // Create a temporary "optimistic" prospect
+          const optimisticProspect: Prospect = {
+            prospectId: -1, // Temp ID (negative to indicate local/optimistic)
+            firstName: newProspect.firstName,
+            lastName: newProspect.lastName,
+            email: newProspect.email,
+            phone: newProspect.phone || '',
+            contacts: 0,
+            status: 'New',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+          return [optimisticProspect, ...old]
+        })
+      }
+
+      return { previousProspects }
+    },
+    onError: (_err, _newTodo, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousProspects) {
+        queryClient.setQueryData(PROSPECTS_QUERY_KEY, context.previousProspects)
+      }
+    },
+    onSuccess: () => {
+      console.log('Command sent successfully. UI optimism applied.')
     },
   })
 }
@@ -41,18 +69,30 @@ export const useUpdateProspect = () => {
 
   return useMutation({
     mutationFn: (request: UpdateProspectRequest) => prospectsApi.updateProspect(request),
-    onSuccess: () => {
-      // Don't invalidate immediately - wait for WebSocket event
-      // queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
-      // queryClient.invalidateQueries({ queryKey: ['prospect'] })
-      console.log('Command sent successfully. Waiting for WebSocket update...')
+    onMutate: async (updatedProspect) => {
+      await queryClient.cancelQueries({ queryKey: PROSPECTS_QUERY_KEY })
+      const previousProspects = queryClient.getQueryData<Prospect[]>(PROSPECTS_QUERY_KEY)
 
-      // Fallback: Invalidate after delay in case WebSocket misses
-      // Increased to 2.5s to allow for eventual consistency in slow environments
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
-        queryClient.invalidateQueries({ queryKey: ['prospect'] })
-      }, 2500)
+      if (previousProspects) {
+        queryClient.setQueryData<Prospect[]>(PROSPECTS_QUERY_KEY, (old) => {
+          if (!old) return []
+          return old.map((p) => 
+            p.prospectId.toString() === updatedProspect.prospectId 
+              ? { ...p, ...updatedProspect, updatedAt: new Date().toISOString() } 
+              : p
+          )
+        })
+      }
+
+      return { previousProspects }
+    },
+    onError: (_err, _newTodo, context) => {
+      if (context?.previousProspects) {
+        queryClient.setQueryData(PROSPECTS_QUERY_KEY, context.previousProspects)
+      }
+    },
+    onSuccess: () => {
+      console.log('Command sent successfully. UI optimism applied.')
     },
   })
 }
