@@ -24,13 +24,13 @@ public class EventGridWebhookHandler
             var binaryData = await BinaryData.FromStreamAsync(request.Body);
 
             // Attempt to parse as CloudEvents (Standard V1.0)
-            try 
+            try
             {
                 var cloudEvents = CloudEvent.ParseMany(binaryData);
                 if (cloudEvents.Any())
                 {
                     _logger.LogInformation("Parsed {Count} CloudEvents", cloudEvents.Length);
-                    
+
                     var parsedEvents = cloudEvents.Select(e => new ParsedEvent
                     {
                         EventId = e.Id,
@@ -49,7 +49,7 @@ public class EventGridWebhookHandler
                     return (true, parsedEvents);
                 }
             }
-            catch 
+            catch
             {
                 // Fallback to Event Grid Schema
             }
@@ -70,7 +70,7 @@ public class EventGridWebhookHandler
                 return (true, new[] { validationEvent });
             }
 
-            var mappedEvents = events.Select(e => new ParsedEvent 
+            var mappedEvents = events.Select(e => new ParsedEvent
             {
                 EventId = e.Id,
                 EventType = e.EventType,
@@ -83,7 +83,7 @@ public class EventGridWebhookHandler
             var validationKey = _configuration["EventGrid:WebhookValidationKey"];
             if (!string.IsNullOrEmpty(validationKey))
             {
-                if (!request.Headers.TryGetValue("aeg-event-type", out var headerKey) || 
+                if (!request.Headers.TryGetValue("aeg-event-type", out var headerKey) ||
                     !headerKey.ToString().Equals("Notification", StringComparison.OrdinalIgnoreCase))
                 {
                     _logger.LogWarning("Invalid Event Grid header: aeg-event-type");

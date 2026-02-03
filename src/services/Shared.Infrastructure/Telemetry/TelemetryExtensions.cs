@@ -47,7 +47,9 @@ public static class TelemetryExtensions
                 {
                     options.SetDbStatementForText = true;
                 })
-                .AddSource(serviceName))
+                .AddSource(serviceName)
+                .AddSource("Azure.Messaging.ServiceBus")
+                .AddSource("Azure.Messaging.EventGrid"))
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()

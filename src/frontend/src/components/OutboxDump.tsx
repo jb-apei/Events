@@ -81,7 +81,14 @@ function ServiceOutboxTable({ service }: { service: ServiceOutboxData }) {
     // Ensure date is treated as UTC if no timezone info is present
     const isIsoWithTimeZone = /Z|[+-]\d{2}:\d{2}$/.test(dateStr);
     const utcDateStr = isIsoWithTimeZone ? dateStr : `${dateStr}Z`;
-    return new Date(utcDateStr).toLocaleString();
+    return new Date(utcDateStr).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'numeric', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
   return (

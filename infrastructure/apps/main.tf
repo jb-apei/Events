@@ -79,6 +79,7 @@ module "container_apps" {
         Azure__ServiceBus__ConnectionString = data.terraform_remote_state.core.outputs.service_bus_connection_string
         ApiGateway__Url                     = local.api_gateway_url
         ApiGateway__PushEvents              = "true"
+        ApplicationInsights__ConnectionString = data.terraform_remote_state.core.outputs.application_insights_connection_string
       }
     }
     student-service = {
@@ -99,6 +100,7 @@ module "container_apps" {
         Azure__ServiceBus__ConnectionString = data.terraform_remote_state.core.outputs.service_bus_connection_string
         ApiGateway__Url                     = local.api_gateway_url
         ApiGateway__PushEvents              = "true"
+        ApplicationInsights__ConnectionString = data.terraform_remote_state.core.outputs.application_insights_connection_string
       }
     }
     instructor-service = {
@@ -119,6 +121,7 @@ module "container_apps" {
         Azure__ServiceBus__ConnectionString = data.terraform_remote_state.core.outputs.service_bus_connection_string
         ApiGateway__Url                     = local.api_gateway_url
         ApiGateway__PushEvents              = "true"
+        ApplicationInsights__ConnectionString = data.terraform_remote_state.core.outputs.application_insights_connection_string
       }
     }
     api-gateway = {
@@ -161,6 +164,7 @@ module "container_apps" {
         Azure__EventGrid__StudentTopicKey         = data.terraform_remote_state.core.outputs.event_grid_topic_access_keys["student-events"]
         Azure__EventGrid__InstructorTopicEndpoint = data.terraform_remote_state.core.outputs.event_grid_topics["instructor-events"]
         Azure__EventGrid__InstructorTopicKey      = data.terraform_remote_state.core.outputs.event_grid_topic_access_keys["instructor-events"]
+        ApplicationInsights__ConnectionString     = data.terraform_remote_state.core.outputs.application_insights_connection_string
       }
     }
     projection-service = {
@@ -180,6 +184,7 @@ module "container_apps" {
         ServiceBus__ConnectionString          = data.terraform_remote_state.core.outputs.service_bus_connection_string
         Azure__ServiceBus__ConnectionString   = data.terraform_remote_state.core.outputs.service_bus_connection_string
         ApiGateway__Url                       = local.api_gateway_url
+        ApplicationInsights__ConnectionString = data.terraform_remote_state.core.outputs.application_insights_connection_string
       }
     }
     frontend = {

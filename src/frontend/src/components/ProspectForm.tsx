@@ -23,7 +23,7 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
   const createProspect = useCreateProspect()
   const updateProspect = useUpdateProspect()
 
-  // Pre-populate form when a prospect is selected
+  // Pre-populate form when a prospect is selected or reset when cleared
   useEffect(() => {
     if (selectedProspect) {
       setEventType('ProspectUpdated')
@@ -34,6 +34,17 @@ const ProspectForm = ({ selectedProspect, onSuccess }: ProspectFormProps) => {
         email: selectedProspect.email,
         phone: selectedProspect.phone || '',
         notes: selectedProspect.notes || '',
+      })
+    } else {
+      // Clear form when selection is removed (e.g. after successful update)
+      setEventType('')
+      setFormData({
+        prospectId: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        notes: '',
       })
     }
   }, [selectedProspect])

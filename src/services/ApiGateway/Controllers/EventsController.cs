@@ -49,7 +49,7 @@ public class EventsController : ControllerBase
                 if (events.Length == 1 && events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
                 {
                     var validationData = events[0].Data;
-                    if (validationData.ValueKind == JsonValueKind.Object && 
+                    if (validationData.ValueKind == JsonValueKind.Object &&
                         validationData.TryGetProperty("validationCode", out var codeProp))
                     {
                         var validationCode = codeProp.GetString();
@@ -85,23 +85,23 @@ public class EventsController : ControllerBase
 
                 return Ok(new { message = "Events processed", count = events.Length });
             }
-            
+
             // 2. Fallback: Manual JSON parsing for direct development POSTs (Legacy/Dev mode)
             // If the handler couldn't parse it, maybe it's a simple JSON pushed manually
             Request.Body.Position = 0;
             using var reader = new StreamReader(Request.Body);
             var body = await reader.ReadToEndAsync();
-            
+
             if (!string.IsNullOrEmpty(body))
             {
-                try 
+                try
                 {
                     var bodyJson = JsonSerializer.Deserialize<JsonElement>(body);
                     if (bodyJson.TryGetProperty("eventType", out var eventTypeProp))
                     {
                         _logger.LogInformation("Processing manual JSON event in development mode");
                         var eventType = eventTypeProp.GetString() ?? "Unknown";
-                        
+
                         // Extract minimal envelope
                         var eventEnvelope = new
                         {

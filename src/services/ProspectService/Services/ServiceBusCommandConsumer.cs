@@ -30,11 +30,11 @@ public class ServiceBusCommandConsumer : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var connectionString = _configuration["ServiceBus:ConnectionString"] 
+        var connectionString = _configuration["ServiceBus:ConnectionString"]
             ?? _configuration["Azure:ServiceBus:ConnectionString"];
-            
-        var queueName = _configuration["Azure:ServiceBus:CommandQueue"] 
-            ?? _configuration["ServiceBus:CommandQueue"] 
+
+        var queueName = _configuration["Azure:ServiceBus:CommandQueue"]
+            ?? _configuration["ServiceBus:CommandQueue"]
             ?? "identity-commands";
 
         if (string.IsNullOrEmpty(connectionString))

@@ -12,7 +12,7 @@ const StudentPage = () => {
   // WebSocket connection with real-time event handling
   const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://ca-events-api-gateway-dev.orangehill-95ada862.eastus2.azurecontainerapps.io/api'
   const wsUrl = apiUrl.replace(/^https?:/, 'wss:').replace('/api', '') + '/ws/events'
-  
+
   const { status } = useWebSocket({
     url: wsUrl,
     onMessage: (event) => {
@@ -40,13 +40,13 @@ const StudentPage = () => {
       </div>
 
       <div className="entity-page">
-        <StudentList 
-          onSelectStudent={handleSelectStudent} 
+        <StudentList
+          onSelectStudent={handleSelectStudent}
           selectedStudent={selectedStudent}
         />
-        <StudentForm 
-          selectedStudent={selectedStudent} 
-          onSuccess={handleSuccess} 
+        <StudentForm
+          selectedStudent={selectedStudent}
+          onSuccess={handleSuccess}
         />
       </div>
     </div>
