@@ -31,96 +31,100 @@ public class EventsController : ControllerBase
     [HttpPost("webhook")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> WebhookAsync([FromBody] JsonElement bodyJson)
+    public async Task<IActionResult> WebhookAsync()
     {
         try
         {
-            // Check if it's CloudEvents format (has eventType, data properties)
-            if (bodyJson.TryGetProperty("eventType", out var eventTypeProp))
+            // Enable buffering so we can read the stream multiple times if needed
+            Request.EnableBuffering();
+
+            // 1. Try to validate and parse using the robust Webhook Handler (CloudEvents + EventGrid support)
+            // This handles the official Event Grid Subscription Validation handshake too
+            Request.Body.Position = 0;
+            var (isValid, events) = await _webhookHandler.ValidateAndParseAsync(Request);
+
+            if (isValid && events != null)
             {
-                _logger.LogInformation("Processing CloudEvent in development mode");
-
-                var eventType = eventTypeProp.GetString() ?? "Unknown";
-
-                // Extract all event envelope properties
-                var eventEnvelope = new
+                // Handle subscription validation response
+                if (events.Length == 1 && events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
                 {
-                    eventId = bodyJson.TryGetProperty("eventId", out var evtId) ? evtId.GetString() : Guid.NewGuid().ToString(),
-                    eventType,
-                    schemaVersion = bodyJson.TryGetProperty("schemaVersion", out var ver) ? ver.GetString() : "1.0",
-                    occurredAt = bodyJson.TryGetProperty("occurredAt", out var time) ? time.GetString() : DateTime.UtcNow.ToString("O"),
-                    producer = bodyJson.TryGetProperty("producer", out var prod) ? prod.GetString() : "prospect-service",
-                    correlationId = bodyJson.TryGetProperty("correlationId", out var corrId) ? corrId.GetString() : "",
-                    causationId = bodyJson.TryGetProperty("causationId", out var causeId) ? causeId.GetString() : "",
-                    subject = bodyJson.TryGetProperty("subject", out var subj) ? subj.GetString() : "",
-                    data = bodyJson.TryGetProperty("data", out var dataEl) ? dataEl : new JsonElement()
-                };
+                    var validationData = events[0].Data;
+                    if (validationData.ValueKind == JsonValueKind.Object && 
+                        validationData.TryGetProperty("validationCode", out var codeProp))
+                    {
+                        var validationCode = codeProp.GetString();
+                        _logger.LogInformation("Responding to Event Grid subscription validation");
+                        return Ok(new { validationResponse = validationCode });
+                    }
+                }
 
-                // Broadcast complete envelope to WebSocket clients
-                await _webSocketManager.BroadcastEventAsync(eventEnvelope, eventType);
+                // Process events and push to WebSocket clients
+                foreach (var parsedEvent in events)
+                {
+                    try
+                    {
+                        var eventType = parsedEvent.EventType;
+                        var eventData = parsedEvent.Data;
 
-                _logger.LogInformation("CloudEvent {EventType} (ID: {EventId}) pushed to {ConnectionCount} WebSocket clients",
-                    eventType, eventEnvelope.eventId, _webSocketManager.GetConnectionCount());
-                return Ok(new { message = "Event processed" });
+                        // Broadcast to all subscribed WebSocket clients
+                        await _webSocketManager.BroadcastEventAsync(new
+                        {
+                            eventType,
+                            subject = parsedEvent.Subject,
+                            eventTime = parsedEvent.EventTime,
+                            data = eventData
+                        }, eventType);
+
+                        _logger.LogInformation("Event {EventType} pushed to WebSocket clients", eventType);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to process event {EventType}", parsedEvent.EventType);
+                    }
+                }
+
+                return Ok(new { message = "Events processed", count = events.Length });
             }
+            
+            // 2. Fallback: Manual JSON parsing for direct development POSTs (Legacy/Dev mode)
+            // If the handler couldn't parse it, maybe it's a simple JSON pushed manually
+            Request.Body.Position = 0;
+            using var reader = new StreamReader(Request.Body);
+            var body = await reader.ReadToEndAsync();
+            
+            if (!string.IsNullOrEmpty(body))
+            {
+                try 
+                {
+                    var bodyJson = JsonSerializer.Deserialize<JsonElement>(body);
+                    if (bodyJson.TryGetProperty("eventType", out var eventTypeProp))
+                    {
+                        _logger.LogInformation("Processing manual JSON event in development mode");
+                        var eventType = eventTypeProp.GetString() ?? "Unknown";
+                        
+                        // Extract minimal envelope
+                        var eventEnvelope = new
+                        {
+                            eventId = Guid.NewGuid().ToString(),
+                            eventType,
+                            data = bodyJson.TryGetProperty("data", out var dataEl) ? dataEl : new JsonElement()
+                        };
+
+                        await _webSocketManager.BroadcastEventAsync(eventEnvelope, eventType);
+                        return Ok(new { message = "Manual event processed" });
+                    }
+                }
+                catch { /* Ignore JSON parse errors here, strictly fallback */ }
+            }
+
+            _logger.LogWarning("Invalid webhook request - neither EventGrid nor CloudEvent format detected");
+            return BadRequest(new { message = "Invalid webhook request" });
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to parse as CloudEvent, trying Event Grid format");
+            _logger.LogError(ex, "Error processing webhook");
+            return StatusCode(500);
         }
-
-        // If not CloudEvents, treat as Event Grid format
-        var (isValid, events) = await _webhookHandler.ValidateAndParseAsync(Request);
-
-        if (!isValid || events == null)
-        {
-            _logger.LogWarning("Invalid Event Grid webhook request");
-            return BadRequest(new { message = "Invalid webhook request" });
-        }
-
-        // Handle subscription validation
-        if (events.Length == 1 && events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
-        {
-            var validationData = events[0].Data;
-            var validationCode = validationData.GetProperty("validationCode").GetString();
-
-            _logger.LogInformation("Responding to Event Grid subscription validation");
-
-            return Ok(new { validationResponse = validationCode });
-        }
-
-        // Process events and push to WebSocket clients
-        foreach (var parsedEvent in events)
-        {
-            try
-            {
-                var eventData = await _webhookHandler.ParseEventDataAsync(parsedEvent);
-
-                if (eventData != null)
-                {
-                    // Extract event type from the EventGrid event
-                    // The event type might be in the format "Prospects.ProspectCreated" or just "ProspectCreated"
-                    var eventType = parsedEvent.EventType;
-
-                    // Broadcast to all subscribed WebSocket clients
-                    await _webSocketManager.BroadcastEventAsync(new
-                    {
-                        eventType,
-                        subject = parsedEvent.Subject,
-                        eventTime = parsedEvent.EventTime,
-                        data = eventData
-                    }, eventType);
-
-                    _logger.LogInformation("Event {EventType} pushed to WebSocket clients", eventType);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to process event {EventType}", parsedEvent.EventType);
-            }
-        }
-
-        return Ok(new { message = "Events processed", count = events.Length });
     }
 
     /// <summary>
