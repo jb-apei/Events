@@ -132,7 +132,7 @@ public class ProspectsController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetProspects([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetProspects([FromQuery] int page = 1, [FromQuery] int pageSize = 1000)
     {
         try
         {
