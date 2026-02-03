@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ApiGateway.Services;
 
 namespace ApiGateway.Controllers;
 
@@ -9,12 +10,51 @@ namespace ApiGateway.Controllers;
 public class OutboxController : ControllerBase
 {
     private readonly IConfiguration _configuration;
+    private readonly ServiceBusInspector _sbInspector;
     private readonly ILogger<OutboxController> _logger;
 
-    public OutboxController(IConfiguration configuration, ILogger<OutboxController> logger)
+    public OutboxController(
+        IConfiguration configuration,
+        ServiceBusInspector sbInspector,
+        ILogger<OutboxController> logger)
     {
         _configuration = configuration;
+        _sbInspector = sbInspector;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Get items from Service Bus Queue (Command Queue)
+    /// </summary>
+    [HttpGet("queue")]
+    public async Task<IActionResult> GetQueueMessages()
+    {
+        try 
+        {
+            var messages = await _sbInspector.PeekQueueMessagesAsync(20);
+            return Ok(messages);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get items from Service Bus Dead Letter Queue
+    /// </summary>
+    [HttpGet("dlq")]
+    public async Task<IActionResult> GetDlqMessages()
+    {
+        try 
+        {
+            var messages = await _sbInspector.PeekDlqMessagesAsync(20);
+            return Ok(messages);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     /// <summary>

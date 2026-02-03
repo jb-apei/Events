@@ -24,6 +24,18 @@ export interface OutboxResponse {
   messages: OutboxMessage[];
 }
 
+export interface ServiceBusMessage {
+  messageId: string;
+  sequenceNumber: number;
+  enqueuedTime: string;
+  subject: string;
+  correlationId: string;
+  deliveryCount: number;
+  body: string;
+  deadLetterReason?: string;
+  deadLetterErrorDescription?: string;
+}
+
 export interface ServiceOutboxData {
   serviceName: string;
   stats: OutboxStats;
@@ -98,4 +110,20 @@ export const diagnosticsApi = {
       }];
     }
   },
-};
+  // Get Service Bus Queue Messages
+  getQueueMessages: async (): Promise<ServiceBusMessage[]> => {
+    const token = localStorage.getItem('jwt_token');
+    const response = await axios.get<ServiceBusMessage[]>(`${API_GATEWAY_URL}/outbox/queue`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    return response.data;
+  },
+
+  // Get Service Bus DLQ Messages
+  getDlqMessages: async (): Promise<ServiceBusMessage[]> => {
+    const token = localStorage.getItem('jwt_token');
+    const response = await axios.get<ServiceBusMessage[]>(`${API_GATEWAY_URL}/outbox/dlq`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    return response.data;
+  },};

@@ -6,6 +6,7 @@ import ProspectPage from './components/ProspectPage'
 import StudentPage from './components/StudentPage'
 import InstructorPage from './components/InstructorPage'
 import OutboxDump from './components/OutboxDump'
+import SBInspector from './components/SBInspector'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -98,7 +99,7 @@ function App() {
                   <Link to="/" className="text-white hover:underline">Prospects</Link>
                   <Link to="/students" className="text-white hover:underline">Students</Link>
                   <Link to="/instructors" className="text-white hover:underline">Instructors</Link>
-                  <Link to="/outboxdump" className="text-white hover:underline">Outbox Dump</Link>
+                  <Link to="/inspector" className="text-white hover:underline">Service Bus Inspector</Link>
                 </nav>
                 <button onClick={handleLogout} className="logout-btn">
                   Logout
@@ -114,6 +115,7 @@ function App() {
                 <Route path="/" element={<ProspectPage />} />
                 <Route path="/students" element={<StudentPage />} />
                 <Route path="/instructors" element={<InstructorPage />} />
+                <Route path="/inspector" element={<SBInspector />} />
                 <Route path="/outboxdump" element={<OutboxDump />} />
               </Routes>
             )}

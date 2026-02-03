@@ -22,8 +22,8 @@ const InstructorPage = () => {
     onMessage: (event) => {
       console.log('WS Message in InstructorPage:', event)
       if (
-        event.type === 'InstructorCreated' ||
-        event.type === 'InstructorUpdated'
+        event.eventType === 'InstructorCreated' ||
+        event.eventType === 'InstructorUpdated'
       ) {
         invalidateInstructors()
       }

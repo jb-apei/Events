@@ -81,6 +81,7 @@ builder.Services.AddHttpClient("Default")
 // Register custom services
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddSingleton<CommandPublisher>();
+builder.Services.AddSingleton<ServiceBusInspector>();
 builder.Services.AddSingleton<WsManager>();
 builder.Services.AddSingleton<WsHandler>();
 builder.Services.AddSingleton<EventGridWebhookHandler>();
