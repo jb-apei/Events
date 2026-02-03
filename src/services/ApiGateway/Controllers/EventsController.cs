@@ -81,7 +81,7 @@ public class EventsController : ControllerBase
         // Handle subscription validation
         if (events.Length == 1 && events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
         {
-            var validationData = JsonSerializer.Deserialize<JsonElement>(events[0].Data?.ToString() ?? "{}");
+            var validationData = events[0].Data;
             var validationCode = validationData.GetProperty("validationCode").GetString();
 
             _logger.LogInformation("Responding to Event Grid subscription validation");
@@ -90,24 +90,24 @@ public class EventsController : ControllerBase
         }
 
         // Process events and push to WebSocket clients
-        foreach (var eventGridEvent in events)
+        foreach (var parsedEvent in events)
         {
             try
             {
-                var eventData = await _webhookHandler.ParseEventDataAsync(eventGridEvent);
+                var eventData = await _webhookHandler.ParseEventDataAsync(parsedEvent);
 
                 if (eventData != null)
                 {
                     // Extract event type from the EventGrid event
                     // The event type might be in the format "Prospects.ProspectCreated" or just "ProspectCreated"
-                    var eventType = eventGridEvent.EventType;
+                    var eventType = parsedEvent.EventType;
 
                     // Broadcast to all subscribed WebSocket clients
                     await _webSocketManager.BroadcastEventAsync(new
                     {
                         eventType,
-                        subject = eventGridEvent.Subject,
-                        eventTime = eventGridEvent.EventTime,
+                        subject = parsedEvent.Subject,
+                        eventTime = parsedEvent.EventTime,
                         data = eventData
                     }, eventType);
 
@@ -116,7 +116,7 @@ public class EventsController : ControllerBase
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to process event {EventType}", eventGridEvent.EventType);
+                _logger.LogError(ex, "Failed to process event {EventType}", parsedEvent.EventType);
             }
         }
 

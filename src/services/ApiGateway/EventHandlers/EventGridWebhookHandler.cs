@@ -1,5 +1,7 @@
+using Azure.Messaging;
 using Azure.Messaging.EventGrid;
 using System.Text.Json;
+using ApiGateway.Models;
 
 namespace ApiGateway.EventHandlers;
 
@@ -14,12 +16,43 @@ public class EventGridWebhookHandler
         _configuration = configuration;
     }
 
-    public async Task<(bool IsValid, EventGridEvent[]? Events)> ValidateAndParseAsync(HttpRequest request)
+    public async Task<(bool IsValid, ParsedEvent[]? Events)> ValidateAndParseAsync(HttpRequest request)
     {
         try
         {
             // Efficiently read using BinaryData instead of StreamReader string allocation
             var binaryData = await BinaryData.FromStreamAsync(request.Body);
+
+            // Attempt to parse as CloudEvents (Standard V1.0)
+            try 
+            {
+                var cloudEvents = CloudEvent.ParseMany(binaryData);
+                if (cloudEvents.Any())
+                {
+                    _logger.LogInformation("Parsed {Count} CloudEvents", cloudEvents.Length);
+                    
+                    var parsedEvents = cloudEvents.Select(e => new ParsedEvent
+                    {
+                        EventId = e.Id,
+                        EventType = e.Type,
+                        Subject = e.Subject,
+                        EventTime = e.Time ?? DateTimeOffset.UtcNow,
+                        Data = e.Data != null ? JsonSerializer.Deserialize<JsonElement>(e.Data.ToString()) : new JsonElement()
+                    }).ToArray();
+
+                    // Check for validation handshake in CloudEvents format
+                    if (parsedEvents.Length == 1 && parsedEvents[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
+                    {
+                        return (true, parsedEvents);
+                    }
+
+                    return (true, parsedEvents);
+                }
+            }
+            catch 
+            {
+                // Fallback to Event Grid Schema
+            }
 
             // Parse Event Grid events
             var events = EventGridEvent.ParseMany(binaryData);
@@ -27,16 +60,31 @@ public class EventGridWebhookHandler
             // Validate Event Grid subscription (webhook validation handshake)
             if (events.Length == 1 && events[0].EventType == "Microsoft.EventGrid.SubscriptionValidationEvent")
             {
-                _logger.LogInformation("Received Event Grid subscription validation request");
-                return (true, events.ToArray());
+                _logger.LogInformation("Received Event Grid validation request");
+                // Convert to ParsedEvent for consistency
+                var validationEvent = new ParsedEvent
+                {
+                    EventType = events[0].EventType,
+                    Data = JsonSerializer.Deserialize<JsonElement>(events[0].Data.ToString())
+                };
+                return (true, new[] { validationEvent });
             }
+
+            var mappedEvents = events.Select(e => new ParsedEvent 
+            {
+                EventId = e.Id,
+                EventType = e.EventType,
+                Subject = e.Subject,
+                EventTime = e.EventTime,
+                Data = JsonSerializer.Deserialize<JsonElement>(e.Data.ToString())
+            }).ToArray();
 
             // Validate webhook key (optional additional security layer)
             var validationKey = _configuration["EventGrid:WebhookValidationKey"];
             if (!string.IsNullOrEmpty(validationKey))
             {
-                var headerKey = request.Headers["aeg-event-type"].ToString();
-                if (string.IsNullOrEmpty(headerKey) || !headerKey.Equals("Notification", StringComparison.OrdinalIgnoreCase))
+                if (!request.Headers.TryGetValue("aeg-event-type", out var headerKey) || 
+                    !headerKey.ToString().Equals("Notification", StringComparison.OrdinalIgnoreCase))
                 {
                     _logger.LogWarning("Invalid Event Grid header: aeg-event-type");
                     return (false, null);
@@ -44,7 +92,7 @@ public class EventGridWebhookHandler
             }
 
             _logger.LogInformation("Received {Count} Event Grid events", events.Length);
-            return (true, events.ToArray());
+            return (true, mappedEvents);
         }
         catch (Exception ex)
         {
@@ -53,33 +101,8 @@ public class EventGridWebhookHandler
         }
     }
 
-    public Task<object?> ParseEventDataAsync(EventGridEvent eventGridEvent)
+    public Task<object?> ParseEventDataAsync(ParsedEvent parsedEvent)
     {
-        try
-        {
-            // Parse the event data based on event type
-            var eventType = eventGridEvent.EventType;
-            var data = eventGridEvent.Data?.ToString();
-
-            if (string.IsNullOrEmpty(data))
-            {
-                _logger.LogWarning("Event {EventType} has no data", eventType);
-                return Task.FromResult<object?>(null);
-            }
-
-            // For this MVP, we pass through the raw event data
-            // In production, you might want to deserialize to specific types
-            var eventData = JsonSerializer.Deserialize<JsonElement>(data);
-
-            _logger.LogInformation("Parsed event {EventType} with subject {Subject}",
-                eventType, eventGridEvent.Subject);
-
-            return Task.FromResult<object?>(eventData);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to parse event data for {EventType}", eventGridEvent.EventType);
-            return Task.FromResult<object?>(null);
-        }
+        return Task.FromResult<object?>(parsedEvent.Data);
     }
 }
