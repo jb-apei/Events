@@ -37,7 +37,7 @@ public class EventGridWebhookHandler
                         EventType = e.Type,
                         Subject = e.Subject,
                         EventTime = e.Time ?? DateTimeOffset.UtcNow,
-                        Data = e.Data != null ? JsonSerializer.Deserialize<JsonElement>(e.Data.ToString()) : new JsonElement()
+                        Data = e.Data != null ? e.Data.ToObjectFromJson<JsonElement>() : default
                     }).ToArray();
 
                     // Check for validation handshake in CloudEvents format
@@ -65,7 +65,7 @@ public class EventGridWebhookHandler
                 var validationEvent = new ParsedEvent
                 {
                     EventType = events[0].EventType,
-                    Data = JsonSerializer.Deserialize<JsonElement>(events[0].Data.ToString())
+                    Data = events[0].Data.ToObjectFromJson<JsonElement>()
                 };
                 return (true, new[] { validationEvent });
             }
@@ -76,7 +76,7 @@ public class EventGridWebhookHandler
                 EventType = e.EventType,
                 Subject = e.Subject,
                 EventTime = e.EventTime,
-                Data = JsonSerializer.Deserialize<JsonElement>(e.Data.ToString())
+                Data = e.Data.ToObjectFromJson<JsonElement>()
             }).ToArray();
 
             // Validate webhook key (optional additional security layer)

@@ -27,7 +27,7 @@ export const useCreateProspect = () => {
       // Don't invalidate immediately - wait for WebSocket event
       // queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
       console.log('Command sent successfully. Waiting for WebSocket update...')
-      
+
       // Fallback: Invalidate after delay in case WebSocket misses
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
@@ -48,10 +48,11 @@ export const useUpdateProspect = () => {
       console.log('Command sent successfully. Waiting for WebSocket update...')
 
       // Fallback: Invalidate after delay in case WebSocket misses
+      // Increased to 2.5s to allow for eventual consistency in slow environments
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: PROSPECTS_QUERY_KEY })
         queryClient.invalidateQueries({ queryKey: ['prospect'] })
-      }, 1000)
+      }, 2500)
     },
   })
 }
